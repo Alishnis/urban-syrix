@@ -205,27 +205,78 @@ class _AccidentReportSheetState extends State<AccidentReportSheet> {
                           padding: const EdgeInsets.all(14),
                           blur: false,
                           backgroundColor: const Color(0xFF101729),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                _result!.detected
-                                    ? Icons.warning_amber_rounded
-                                    : Icons.verified_rounded,
-                                color: _result!.detected
-                                    ? AppTheme.danger
-                                    : AppTheme.accent,
+                              Row(
+                                children: [
+                                  Icon(
+                                    _result!.detected
+                                        ? Icons.warning_amber_rounded
+                                        : Icons.verified_rounded,
+                                    color: _result!.detected
+                                        ? AppTheme.danger
+                                        : AppTheme.accent,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _result!.detected
+                                          ? '${loc.tr('detection_found')} ${(100 * _result!.maxConfidence).toStringAsFixed(1)}%'
+                                          : loc.tr('detection_not_found'),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  _result!.detected
-                                      ? '${loc.tr('detection_found')} ${(100 * _result!.maxConfidence).toStringAsFixed(1)}%'
-                                      : loc.tr('detection_not_found'),
+                              if (_result!.detected &&
+                                  _detectionRegionLabel(_result!) != null) ...[
+                                const SizedBox(height: 12),
+                                _DetectionFactRow(
+                                  label: loc.tr('detection_location'),
+                                  value: _detectionRegionLabel(_result!)!,
+                                ),
+                              ],
+                              if (_result!.detected &&
+                                  _detectionBoxLabel(_result!) != null) ...[
+                                const SizedBox(height: 8),
+                                _DetectionFactRow(
+                                  label: loc.tr('detection_coordinates'),
+                                  value: _detectionBoxLabel(_result!)!,
+                                ),
+                              ],
+                              if (_result!.previewUrl != null) ...[
+                                const SizedBox(height: 14),
+                                Text(
+                                  loc.tr('detection_preview'),
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              ),
+                                const SizedBox(height: 10),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    _result!.previewUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.bgTertiary,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Text(
+                                        loc.tr('preview_unavailable'),
+                                        style: const TextStyle(
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -487,6 +538,75 @@ class _AccidentReportSheetState extends State<AccidentReportSheet> {
         });
       }
     }
+  }
+
+  String? _detectionRegionLabel(DetectionResult result) {
+    final bestBox = result.stats['best_box'];
+    if (bestBox is! Map) {
+      return null;
+    }
+    final region = bestBox['region'] as String?;
+    if (region == null || region.isEmpty) {
+      return null;
+    }
+
+    return region
+        .split('-')
+        .map(
+          (part) => part.isEmpty
+              ? part
+              : '${part[0].toUpperCase()}${part.substring(1)}',
+        )
+        .join(' ');
+  }
+
+  String? _detectionBoxLabel(DetectionResult result) {
+    final bestBox = result.stats['best_box'];
+    if (bestBox is! Map) {
+      return null;
+    }
+
+    final x1 = bestBox['x1'];
+    final y1 = bestBox['y1'];
+    final x2 = bestBox['x2'];
+    final y2 = bestBox['y2'];
+    if (x1 == null || y1 == null || x2 == null || y2 == null) {
+      return null;
+    }
+
+    return '($x1, $y1) - ($x2, $y2)';
+  }
+}
+
+class _DetectionFactRow extends StatelessWidget {
+  const _DetectionFactRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 148,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
   }
 }
 

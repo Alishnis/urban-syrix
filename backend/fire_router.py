@@ -42,6 +42,35 @@ def _has_allowed_extension(filename: str | None, allowed: set[str]) -> bool:
     return Path(filename).suffix.lower() in allowed
 
 
+def _region_label(
+    x1: int,
+    y1: int,
+    x2: int,
+    y2: int,
+    frame_width: int,
+    frame_height: int,
+) -> str:
+    center_x = (x1 + x2) / 2
+    center_y = (y1 + y2) / 2
+
+    horizontal = (
+        "left"
+        if center_x < frame_width / 3
+        else "right"
+        if center_x > frame_width * 2 / 3
+        else "center"
+    )
+    vertical = (
+        "top"
+        if center_y < frame_height / 3
+        else "bottom"
+        if center_y > frame_height * 2 / 3
+        else "middle"
+    )
+
+    return f"{vertical}-{horizontal}"
+
+
 def _detect_fire_video(video_path: Path, conf_threshold: float = 0.4):
     model = _get_model()
     cap = cv2.VideoCapture(str(video_path))
@@ -60,6 +89,7 @@ def _detect_fire_video(video_path: Path, conf_threshold: float = 0.4):
     max_confidence = 0.0
     best_frame_confidence = 0.0
     best_frame = None
+    best_box = None
     fire_detected = False
 
     try:
@@ -92,6 +122,20 @@ def _detect_fire_video(video_path: Path, conf_threshold: float = 0.4):
                             # Draw box on best frame for preview
                             annotated = frame.copy()
                             x1, y1, x2, y2 = map(int, box.xyxy[0])
+                            best_box = {
+                                "x1": x1,
+                                "y1": y1,
+                                "x2": x2,
+                                "y2": y2,
+                                "region": _region_label(
+                                    x1,
+                                    y1,
+                                    x2,
+                                    y2,
+                                    frame.shape[1],
+                                    frame.shape[0],
+                                ),
+                            }
                             cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 0, 255), 3)
                             label = f"fire {confidence * 100:.1f}%"
                             cv2.putText(annotated, label, (x1, max(y1 - 10, 20)),
@@ -114,6 +158,7 @@ def _detect_fire_video(video_path: Path, conf_threshold: float = 0.4):
         "max_confidence": round(max_confidence, 3),
         "best_frame_confidence": round(best_frame_confidence, 3),
         "preview_name": preview_name,
+        "best_box": best_box,
         "video_name": None,
         "threshold": conf_threshold,
     }
@@ -128,6 +173,7 @@ def _detect_fire_image(image_path: Path, conf_threshold: float = 0.4):
     max_confidence = 0.0
     fire_detected = False
     annotated = image.copy()
+    best_box = None
 
     results = model(image, stream=True, verbose=False, imgsz=640)
     for info in results:
@@ -138,6 +184,21 @@ def _detect_fire_image(image_path: Path, conf_threshold: float = 0.4):
             if cls == 0 and confidence >= conf_threshold:
                 fire_detected = True
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
+                if best_box is None or confidence >= max_confidence:
+                    best_box = {
+                        "x1": x1,
+                        "y1": y1,
+                        "x2": x2,
+                        "y2": y2,
+                        "region": _region_label(
+                            x1,
+                            y1,
+                            x2,
+                            y2,
+                            image.shape[1],
+                            image.shape[0],
+                        ),
+                    }
                 cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 0, 255), 3)
                 label = f"fire {confidence * 100:.1f}%"
                 cv2.putText(annotated, label, (x1, max(y1 - 10, 20)),
@@ -152,6 +213,7 @@ def _detect_fire_image(image_path: Path, conf_threshold: float = 0.4):
         "fire_detected": fire_detected,
         "max_confidence": round(max_confidence, 3),
         "preview_name": preview_name,
+        "best_box": best_box,
         "threshold": conf_threshold,
     }
 

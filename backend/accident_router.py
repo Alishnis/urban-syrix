@@ -59,6 +59,35 @@ def _has_allowed_extension(filename: str | None, allowed: set[str]) -> bool:
     return Path(filename).suffix.lower() in allowed
 
 
+def _region_label(
+    x1: int,
+    y1: int,
+    x2: int,
+    y2: int,
+    frame_width: int,
+    frame_height: int,
+) -> str:
+    center_x = (x1 + x2) / 2
+    center_y = (y1 + y2) / 2
+
+    horizontal = (
+        "left"
+        if center_x < frame_width / 3
+        else "right"
+        if center_x > frame_width * 2 / 3
+        else "center"
+    )
+    vertical = (
+        "top"
+        if center_y < frame_height / 3
+        else "bottom"
+        if center_y > frame_height * 2 / 3
+        else "middle"
+    )
+
+    return f"{vertical}-{horizontal}"
+
+
 def _draw_box(frame, x1, y1, x2, y2, label, color, thickness=2):
     t_size = cv2.getTextSize(label, 0, fontScale=0.6, thickness=1)[0]
     c2 = x1 + t_size[0], y1 - t_size[1] - 4
@@ -83,6 +112,7 @@ def _detect_accident_image(image_path: Path, conf_threshold: float = 0.2):
     accident_detected = False
     max_confidence = 0.0
     accident_boxes = 0
+    best_box = None
 
     # Detect vehicles — imgsz=640, no augment
     for r in vehicle_model(img, stream=True, conf=0.35, verbose=False, imgsz=640):
@@ -102,6 +132,21 @@ def _detect_accident_image(image_path: Path, conf_threshold: float = 0.2):
             max_confidence = max(max_confidence, conf)
             accident_detected = True
             accident_boxes += 1
+            if best_box is None or conf >= max_confidence:
+                best_box = {
+                    "x1": x1,
+                    "y1": y1,
+                    "x2": x2,
+                    "y2": y2,
+                    "region": _region_label(
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        img.shape[1],
+                        img.shape[0],
+                    ),
+                }
             _draw_box(annotated, x1, y1, x2, y2, f"Accident {math.ceil(conf * 100) / 100}", COLOR_ACCIDENT, 3)
 
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
@@ -114,6 +159,7 @@ def _detect_accident_image(image_path: Path, conf_threshold: float = 0.2):
         "accident_boxes": accident_boxes,
         "max_confidence": round(max_confidence, 3),
         "preview_name": preview_name,
+        "best_box": best_box,
         "threshold": conf_threshold,
     }
 
@@ -138,6 +184,7 @@ def _detect_accident_video(video_path: Path, conf_threshold: float = 0.2):
     max_confidence = 0.0
     best_frame_conf = 0.0
     best_frame = None
+    best_box = None
     accident_detected = False
 
     try:
@@ -175,6 +222,21 @@ def _detect_accident_video(video_path: Path, conf_threshold: float = 0.2):
                         for box in r.boxes:
                             x1, y1, x2, y2 = map(int, box.xyxy[0])
                             c = float(box.conf[0])
+                            if c >= best_frame_conf:
+                                best_box = {
+                                    "x1": x1,
+                                    "y1": y1,
+                                    "x2": x2,
+                                    "y2": y2,
+                                    "region": _region_label(
+                                        x1,
+                                        y1,
+                                        x2,
+                                        y2,
+                                        frame.shape[1],
+                                        frame.shape[0],
+                                    ),
+                                }
                             _draw_box(annotated, x1, y1, x2, y2, f"Accident {math.ceil(c * 100) / 100}", COLOR_ACCIDENT, 3)
                     best_frame = annotated
     finally:
@@ -193,6 +255,7 @@ def _detect_accident_video(video_path: Path, conf_threshold: float = 0.2):
         "frames_with_accident": frames_with_accident,
         "max_confidence": round(max_confidence, 3),
         "preview_name": preview_name,
+        "best_box": best_box,
         "threshold": conf_threshold,
     }
 

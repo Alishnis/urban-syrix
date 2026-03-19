@@ -7,7 +7,9 @@ import 'package:hackathon_net/domain/models/urban_models.dart';
 import 'package:hackathon_net/domain/services/urban_score_service.dart';
 import 'package:hackathon_net/features/auth/domain/app_role.dart';
 import 'package:hackathon_net/features/map/data/reverse_geocoding_service.dart';
+import 'package:hackathon_net/features/map/data/safe_route_service.dart';
 import 'package:hackathon_net/features/map/map_styles.dart';
+import 'package:hackathon_net/features/map/models/safe_route_result.dart';
 import 'package:hackathon_net/features/map/widgets/accident_report_sheet.dart';
 import 'package:hackathon_net/features/map/widgets/create_place_sheet.dart';
 import 'package:hackathon_net/features/map/widgets/place_details_sheet.dart';
@@ -39,11 +41,18 @@ class MapTab extends StatefulWidget {
 class _MapTabState extends State<MapTab> {
   final ReverseGeocodingService _reverseGeocodingService =
       const ReverseGeocodingService();
+  final SafeRouteService _safeRouteService = const SafeRouteService();
   ScoreCriterion _criterion = ScoreCriterion.overall;
   bool _isSheetOpen = false;
   LatLng? _draftMarkerTarget;
   DateTime? _ignoreMapTapUntil;
   _MapCreateMode _createMode = _MapCreateMode.none;
+  _RouteSelectMode _routeSelectMode = _RouteSelectMode.none;
+  LatLng? _routeStart;
+  LatLng? _routeEnd;
+  SafeRouteResult? _safeRoute;
+  String? _routeError;
+  bool _isBuildingRoute = false;
 
   bool get _canCreateMapPoint =>
       widget.currentRole == AppRole.builder ||
@@ -52,7 +61,8 @@ class _MapTabState extends State<MapTab> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final markers = _buildMarkers();
+    final circles = _buildCircles();
+    final polylines = _buildPolylines();
     final startPoint = widget.places.first.location;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final compactOverlay = screenWidth < 640;
@@ -81,11 +91,13 @@ class _MapTabState extends State<MapTab> {
                 target: LatLng(startPoint.latitude, startPoint.longitude),
                 zoom: 11.6,
               ),
-              markers: markers,
+              markers: const <Marker>{},
+              circles: circles,
+              polylines: polylines,
               myLocationButtonEnabled: false,
               mapToolbarEnabled: false,
               compassEnabled: true,
-              onTap: _canCreateMapPoint ? _handleMapTap : null,
+              onTap: _handleMapTap,
             ),
           ),
           Positioned(
@@ -104,66 +116,36 @@ class _MapTabState extends State<MapTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (compactOverlay)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.radar_rounded,
-                              color: AppTheme.accent,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    loc.tr('live_city_map'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.radar_rounded,
+                            color: AppTheme.accent,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  loc.tr('live_city_map'),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                  Text(
-                                    mapHint,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AppTheme.textMuted,
-                                      fontSize: 12,
-                                    ),
+                                ),
+                                Text(
+                                  mapHint,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppTheme.textMuted,
+                                    fontSize: 12,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        )
-                      else
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.radar_rounded,
-                              color: AppTheme.accent,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    loc.tr('live_city_map'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  Text(
-                                    mapHint,
-                                    style: const TextStyle(
-                                      color: AppTheme.textMuted,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          ),
+                          if (!compactOverlay) ...[
                             const SizedBox(width: 10),
                             SizedBox(
                               width: 220,
@@ -193,7 +175,8 @@ class _MapTabState extends State<MapTab> {
                               ),
                             ),
                           ],
-                        ),
+                        ],
+                      ),
                       if (compactOverlay) ...[
                         const SizedBox(height: 8),
                         DropdownButton<ScoreCriterion>(
@@ -219,19 +202,76 @@ class _MapTabState extends State<MapTab> {
                           },
                         ),
                       ],
-                      if (_canCreateMapPoint) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _ModeButton(
+                            label: loc.tr('set_start'),
+                            isActive:
+                                _routeSelectMode == _RouteSelectMode.start,
+                            icon: Icons.trip_origin_rounded,
+                            enabled: true,
+                            onTap: () {
+                              setState(() {
+                                _createMode = _MapCreateMode.none;
+                                _routeSelectMode =
+                                    _routeSelectMode == _RouteSelectMode.start
+                                    ? _RouteSelectMode.none
+                                    : _RouteSelectMode.start;
+                              });
+                            },
+                          ),
+                          _ModeButton(
+                            label: loc.tr('set_destination'),
+                            isActive:
+                                _routeSelectMode ==
+                                _RouteSelectMode.destination,
+                            icon: Icons.flag_rounded,
+                            enabled: true,
+                            onTap: () {
+                              setState(() {
+                                _createMode = _MapCreateMode.none;
+                                _routeSelectMode =
+                                    _routeSelectMode ==
+                                        _RouteSelectMode.destination
+                                    ? _RouteSelectMode.none
+                                    : _RouteSelectMode.destination;
+                              });
+                            },
+                          ),
+                          _ModeButton(
+                            label: _isBuildingRoute
+                                ? loc.tr('building_route')
+                                : loc.tr('build_safe_route'),
+                            isActive: _safeRoute != null,
+                            icon: Icons.alt_route_rounded,
+                            enabled:
+                                !_isBuildingRoute &&
+                                _routeStart != null &&
+                                _routeEnd != null,
+                            onTap: _buildSafeRoute,
+                          ),
+                          _ModeButton(
+                            label: loc.tr('clear_route'),
+                            isActive: false,
+                            icon: Icons.layers_clear_rounded,
+                            enabled:
+                                _routeStart != null ||
+                                _routeEnd != null ||
+                                _safeRoute != null,
+                            onTap: _clearRoute,
+                          ),
+                          if (_canCreateMapPoint)
                             _ModeButton(
                               label: loc.tr('add_place'),
-                              icon: Icons.apartment_rounded,
                               isActive: _createMode == _MapCreateMode.place,
+                              icon: Icons.apartment_rounded,
                               enabled: _canCreateMapPoint,
                               onTap: () {
                                 setState(() {
+                                  _routeSelectMode = _RouteSelectMode.none;
                                   _createMode =
                                       _createMode == _MapCreateMode.place
                                       ? _MapCreateMode.none
@@ -239,13 +279,15 @@ class _MapTabState extends State<MapTab> {
                                 });
                               },
                             ),
+                          if (_canCreateMapPoint)
                             _ModeButton(
                               label: loc.tr('add_accident'),
-                              icon: Icons.car_crash_rounded,
                               isActive: _createMode == _MapCreateMode.accident,
+                              icon: Icons.car_crash_rounded,
                               enabled: _canCreateMapPoint,
                               onTap: () {
                                 setState(() {
+                                  _routeSelectMode = _RouteSelectMode.none;
                                   _createMode =
                                       _createMode == _MapCreateMode.accident
                                       ? _MapCreateMode.none
@@ -253,7 +295,38 @@ class _MapTabState extends State<MapTab> {
                                 });
                               },
                             ),
-                          ],
+                          if (!_canCreateMapPoint)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4, top: 10),
+                              child: Text(
+                                loc.tr('map_point_builder_only'),
+                                style: const TextStyle(
+                                  color: AppTheme.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (_routeError != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          _routeError!,
+                          style: const TextStyle(
+                            color: AppTheme.danger,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      if (_safeRoute != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          '${loc.tr('safe_route_ready')} ${(_safeRoute!.distanceMeters / 1000).toStringAsFixed(1)} km · ${(_safeRoute!.durationSeconds / 60).round()} min · ${_safeRoute!.avoidedPoints} ${loc.tr('accidents_avoided')}',
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ],
@@ -369,44 +442,77 @@ class _MapTabState extends State<MapTab> {
     );
   }
 
-  Set<Marker> _buildMarkers() {
-    final loc = AppLocalizations.of(context);
-    final markers = widget.places.map((place) {
-      final score = UrbanScoreService.scoreByCriterion(place, _criterion);
-      return Marker(
-        markerId: MarkerId(place.id),
-        position: LatLng(place.location.latitude, place.location.longitude),
-        icon: BitmapDescriptor.defaultMarkerWithHue(_markerHue(place, score)),
-        infoWindow: InfoWindow(
-          title: place.name,
-          snippet: place.type == UrbanPlaceType.incident
-              ? (place.incidentSubtype != null
-                    ? loc.incidentDetectionLabel(place.incidentSubtype!)
-                    : loc.tr('live_incident'))
-              : '${loc.placeTypeLabel(place.type)} | ${score.round()}',
-        ),
+  Set<Circle> _buildCircles() {
+    final circles = widget.places.map((place) {
+      return Circle(
+        circleId: CircleId(place.id),
+        center: LatLng(place.location.latitude, place.location.longitude),
+        radius: 120,
+        fillColor: _circleColor(place),
+        strokeColor: Colors.white,
+        strokeWidth: 2,
+        consumeTapEvents: true,
         onTap: () => _openDetails(place),
       );
     }).toSet();
 
     final draftTarget = _draftMarkerTarget;
     if (draftTarget != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('draft_marker'),
-          position: draftTarget,
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueAzure,
-          ),
-          infoWindow: InfoWindow(
-            title: loc.tr('new_marker_location'),
-            snippet: loc.tr('selected_point'),
-          ),
+      circles.add(
+        Circle(
+          circleId: const CircleId('draft_marker'),
+          center: draftTarget,
+          radius: 105,
+          fillColor: const Color(0xFF2F7AF8),
+          strokeColor: Colors.white,
+          strokeWidth: 2,
         ),
       );
     }
 
-    return markers;
+    if (_routeStart != null) {
+      circles.add(
+        Circle(
+          circleId: const CircleId('route_start'),
+          center: _routeStart!,
+          radius: 105,
+          fillColor: const Color(0xFF2F7AF8),
+          strokeColor: Colors.white,
+          strokeWidth: 2,
+        ),
+      );
+    }
+
+    if (_routeEnd != null) {
+      circles.add(
+        Circle(
+          circleId: const CircleId('route_end'),
+          center: _routeEnd!,
+          radius: 105,
+          fillColor: const Color(0xFFF0C419),
+          strokeColor: Colors.white,
+          strokeWidth: 2,
+        ),
+      );
+    }
+
+    return circles;
+  }
+
+  Set<Polyline> _buildPolylines() {
+    final route = _safeRoute;
+    if (route == null || route.points.isEmpty) {
+      return const <Polyline>{};
+    }
+
+    return {
+      Polyline(
+        polylineId: const PolylineId('safe_route'),
+        points: route.points,
+        color: AppTheme.accent,
+        width: 6,
+      ),
+    };
   }
 
   void _openDetails(UrbanPlace place) {
@@ -436,6 +542,22 @@ class _MapTabState extends State<MapTab> {
 
   void _handleMapTap(LatLng target) {
     if (_isSheetOpen || _shouldIgnoreMapTap()) {
+      return;
+    }
+    if (_routeSelectMode == _RouteSelectMode.start) {
+      setState(() {
+        _routeStart = target;
+        _routeSelectMode = _RouteSelectMode.none;
+        _routeError = null;
+      });
+      return;
+    }
+    if (_routeSelectMode == _RouteSelectMode.destination) {
+      setState(() {
+        _routeEnd = target;
+        _routeSelectMode = _RouteSelectMode.none;
+        _routeError = null;
+      });
       return;
     }
     if (!_canCreateMapPoint) {
@@ -512,6 +634,64 @@ class _MapTabState extends State<MapTab> {
     _suppressNextMapTap();
   }
 
+  Future<void> _buildSafeRoute() async {
+    final routeStart = _routeStart;
+    final routeEnd = _routeEnd;
+    if (routeStart == null || routeEnd == null) {
+      return;
+    }
+
+    setState(() {
+      _isBuildingRoute = true;
+      _routeError = null;
+    });
+
+    try {
+      final avoidPoints = widget.places
+          .where((place) => place.type == UrbanPlaceType.incident)
+          .map(
+            (place) =>
+                LatLng(place.location.latitude, place.location.longitude),
+          )
+          .toList(growable: false);
+
+      final result = await _safeRouteService.buildRoute(
+        origin: routeStart,
+        destination: routeEnd,
+        avoidPoints: avoidPoints,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _safeRoute = result;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _routeError = error.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBuildingRoute = false;
+        });
+      }
+    }
+  }
+
+  void _clearRoute() {
+    setState(() {
+      _routeStart = null;
+      _routeEnd = null;
+      _safeRoute = null;
+      _routeError = null;
+      _routeSelectMode = _RouteSelectMode.none;
+    });
+  }
+
   Future<void> _openAccidentSheet(LatLng target) async {
     if (_isSheetOpen) {
       return;
@@ -547,30 +727,20 @@ class _MapTabState extends State<MapTab> {
     _suppressNextMapTap();
   }
 
-  double _markerHue(UrbanPlace place, double score) {
+  Color _circleColor(UrbanPlace place) {
     if (place.type == UrbanPlaceType.incident) {
-      return switch (place.incidentSubtype) {
-        IncidentSubtype.fire => BitmapDescriptor.hueRed,
-        IncidentSubtype.carAccident => BitmapDescriptor.hueRose,
-        IncidentSubtype.other || null => BitmapDescriptor.hueViolet,
-      };
+      return const Color(0xFFE64B3C);
     }
     if (place.type == UrbanPlaceType.building) {
-      return BitmapDescriptor.hueAzure;
+      return const Color(0xFF22A06B);
     }
     if (place.type == UrbanPlaceType.construction) {
-      return BitmapDescriptor.hueOrange;
+      return const Color(0xFF22A06B);
     }
     if (place.type == UrbanPlaceType.road) {
-      return BitmapDescriptor.hueGreen;
+      return const Color(0xFF22A06B);
     }
-    if (score >= 75) {
-      return BitmapDescriptor.hueGreen;
-    }
-    if (score >= 55) {
-      return BitmapDescriptor.hueOrange;
-    }
-    return BitmapDescriptor.hueRed;
+    return const Color(0xFFE64B3C);
   }
 
   void _suppressNextMapTap() {
@@ -591,6 +761,8 @@ class _MapTabState extends State<MapTab> {
 }
 
 enum _MapCreateMode { none, place, accident }
+
+enum _RouteSelectMode { none, start, destination }
 
 class _ModeButton extends StatelessWidget {
   const _ModeButton({

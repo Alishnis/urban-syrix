@@ -58,6 +58,16 @@ class AppLocalizations {
       AppLanguage.kk:
           'Апат белгісін қою және detection flow ашу үшін картаны басыңыз.',
     },
+    'tap_to_set_start': {
+      AppLanguage.en: 'Tap the map to set the route start point.',
+      AppLanguage.ru: 'Нажмите на карту, чтобы задать старт маршрута.',
+      AppLanguage.kk: 'Маршруттың басталу нүктесін қою үшін картаны басыңыз.',
+    },
+    'tap_to_set_destination': {
+      AppLanguage.en: 'Tap the map to set the route destination.',
+      AppLanguage.ru: 'Нажмите на карту, чтобы задать точку назначения.',
+      AppLanguage.kk: 'Маршруттың соңғы нүктесін қою үшін картаны басыңыз.',
+    },
     'pick_create_mode': {
       AppLanguage.en: 'Choose Add place or Add accident first.',
       AppLanguage.ru: 'Сначала выберите Add place или Add accident.',
@@ -72,6 +82,51 @@ class AppLocalizations {
       AppLanguage.en: 'Add accident',
       AppLanguage.ru: 'Добавить аварию',
       AppLanguage.kk: 'Апат қосу',
+    },
+    'set_start': {
+      AppLanguage.en: 'Set start',
+      AppLanguage.ru: 'Точка старта',
+      AppLanguage.kk: 'Бастау нүктесі',
+    },
+    'set_destination': {
+      AppLanguage.en: 'Set end',
+      AppLanguage.ru: 'Точка финиша',
+      AppLanguage.kk: 'Аяқтау нүктесі',
+    },
+    'build_safe_route': {
+      AppLanguage.en: 'Build safe route',
+      AppLanguage.ru: 'Построить безопасный маршрут',
+      AppLanguage.kk: 'Қауіпсіз маршрут құру',
+    },
+    'building_route': {
+      AppLanguage.en: 'Building route...',
+      AppLanguage.ru: 'Маршрут строится...',
+      AppLanguage.kk: 'Маршрут құрылуда...',
+    },
+    'clear_route': {
+      AppLanguage.en: 'Clear route',
+      AppLanguage.ru: 'Очистить маршрут',
+      AppLanguage.kk: 'Маршрутты тазалау',
+    },
+    'safe_route_ready': {
+      AppLanguage.en: 'Safe route ready:',
+      AppLanguage.ru: 'Безопасный маршрут готов:',
+      AppLanguage.kk: 'Қауіпсіз маршрут дайын:',
+    },
+    'accidents_avoided': {
+      AppLanguage.en: 'incidents avoided',
+      AppLanguage.ru: 'инцидентов в обходе',
+      AppLanguage.kk: 'инцидент айналып өтілді',
+    },
+    'route_start': {
+      AppLanguage.en: 'Route start',
+      AppLanguage.ru: 'Старт маршрута',
+      AppLanguage.kk: 'Маршрут бастауы',
+    },
+    'route_destination': {
+      AppLanguage.en: 'Route destination',
+      AppLanguage.ru: 'Точка назначения',
+      AppLanguage.kk: 'Маршрут мақсаты',
     },
     'cloud_syncing': {
       AppLanguage.en: 'Syncing map points with cloud storage...',
@@ -321,6 +376,16 @@ class AppLocalizations {
       AppLanguage.en: 'No incident detected in the uploaded media.',
       AppLanguage.ru: 'В загруженном медиа инцидент не найден.',
       AppLanguage.kk: 'Жүктелген медиадан инцидент табылмады.',
+    },
+    'detection_location': {
+      AppLanguage.en: 'Detected area',
+      AppLanguage.ru: 'Область обнаружения',
+      AppLanguage.kk: 'Анықталған аймақ',
+    },
+    'detection_coordinates': {
+      AppLanguage.en: 'Bounding box',
+      AppLanguage.ru: 'Координаты рамки',
+      AppLanguage.kk: 'Жақтау координаттары',
     },
     'incident_summary': {
       AppLanguage.en: 'Incident summary',
