@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon_net/core/localization/app_localizations.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/features/auth/presentation/auth_scope.dart';
@@ -11,19 +12,21 @@ class AccountTab extends StatelessWidget {
     final auth = AuthScope.of(context);
     final user = auth.user;
     final profile = auth.profile;
+    final loc = AppLocalizations.of(context);
+    final roleKey = profile?.role.key ?? 'resident';
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
       children: [
-        const SectionEyebrow(label: 'Profile'),
+        SectionEyebrow(label: loc.tr('profile')),
         const SizedBox(height: 14),
         GlassPanel(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Authenticated operator profile.',
+              Text(
+                loc.tr('operator_profile'),
                 style: TextStyle(
                   fontSize: 34,
                   height: 1.05,
@@ -33,7 +36,7 @@ class AccountTab extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                user?.email ?? 'Unknown email',
+                user?.email ?? loc.tr('unknown_email'),
                 style: const TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 17,
@@ -41,7 +44,7 @@ class AccountTab extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Chip(
-                label: Text(profile?.role.label ?? 'Resident'),
+                label: Text(loc.roleLabel(roleKey)),
                 avatar: const Icon(Icons.badge_outlined, size: 18),
               ),
             ],
@@ -51,45 +54,39 @@ class AccountTab extends StatelessWidget {
         GlassPanel(
           child: ListTile(
             leading: const Icon(Icons.verified_user_outlined),
-            title: const Text('Authenticated with Supabase'),
+            title: Text(loc.tr('authenticated_supabase')),
             subtitle: Text(
-              'User id: ${user?.id ?? 'Unavailable'}\nRole: ${profile?.role.key ?? 'resident'}',
+              '${loc.tr('user_id')}: ${user?.id ?? loc.tr('unavailable')}\n${loc.tr('role')}: ${loc.roleLabel(roleKey)}',
             ),
           ),
         ),
-        if (profile?.role.label == 'Administrator') ...[
+        if (roleKey == 'admin') ...[
           const SizedBox(height: 16),
-          const GlassPanel(
+          GlassPanel(
             child: ListTile(
               leading: Icon(Icons.admin_panel_settings_outlined),
-              title: Text('Administrator access enabled'),
-              subtitle: Text(
-                'This account can be used for moderation and operational controls.',
-              ),
+              title: Text(loc.tr('admin_access')),
+              subtitle: Text(loc.tr('admin_access_body')),
             ),
           ),
         ],
-        if (profile?.role.label == 'Builder') ...[
+        if (roleKey == 'builder') ...[
           const SizedBox(height: 16),
-          const GlassPanel(
+          GlassPanel(
             child: ListTile(
               leading: Icon(Icons.construction_outlined),
-              title: Text('Builder workspace'),
-              subtitle: Text(
-                'Use this role for contractor and remediation workflows.',
-              ),
+              title: Text(loc.tr('builder_workspace')),
+              subtitle: Text(loc.tr('builder_workspace_body')),
             ),
           ),
         ],
-        if (profile?.role.label == 'Resident') ...[
+        if (roleKey == 'resident') ...[
           const SizedBox(height: 16),
-          const GlassPanel(
+          GlassPanel(
             child: ListTile(
               leading: Icon(Icons.home_outlined),
-              title: Text('Resident workspace'),
-              subtitle: Text(
-                'Use this role for reporting and monitoring local urban issues.',
-              ),
+              title: Text(loc.tr('resident_workspace')),
+              subtitle: Text(loc.tr('resident_workspace_body')),
             ),
           ),
         ],
@@ -97,7 +94,9 @@ class AccountTab extends StatelessWidget {
         FilledButton.icon(
           onPressed: auth.isBusy ? null : auth.signOut,
           icon: const Icon(Icons.logout_rounded),
-          label: Text(auth.isBusy ? 'Please wait...' : 'Sign out'),
+          label: Text(
+            auth.isBusy ? loc.tr('please_wait') : loc.tr('sign_out'),
+          ),
         ),
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon_net/core/localization/app_localizations.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
@@ -11,6 +12,7 @@ class DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final cityScore = UrbanScoreService.cityAverageScore(places);
     final avgFixDays = UrbanScoreService.averageFixDays(places);
     final alerts = UrbanScoreService.buildAlerts(places);
@@ -24,10 +26,10 @@ class DashboardTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
       children: [
-        const SectionEyebrow(label: 'City operations'),
+        SectionEyebrow(label: loc.tr('city_operations')),
         const SizedBox(height: 14),
-        const Text(
-          'Municipal signals in a structural glass control layer.',
+        Text(
+          loc.tr('dashboard_title'),
           style: TextStyle(
             fontSize: 34,
             height: 1.05,
@@ -36,8 +38,8 @@ class DashboardTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
-          'A real-time overview of score health, maintenance pressure and high-priority places across the city.',
+        Text(
+          loc.tr('dashboard_body'),
           style: TextStyle(
             color: AppTheme.textSecondary,
             fontSize: 16,
@@ -46,6 +48,7 @@ class DashboardTab extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         _HeroStats(
+          loc: loc,
           cityScore: cityScore,
           placesCount: places.length,
           openIssues: places.fold<int>(
@@ -55,7 +58,7 @@ class DashboardTab extends StatelessWidget {
           avgFixDays: avgFixDays,
         ),
         const SizedBox(height: 16),
-        const SectionEyebrow(label: 'Active alerts'),
+        SectionEyebrow(label: loc.tr('active_alerts')),
         const SizedBox(height: 10),
         for (final alert in alerts)
           Padding(
@@ -93,7 +96,7 @@ class DashboardTab extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 12),
-        const SectionEyebrow(label: 'Top places by urban syrix'),
+        SectionEyebrow(label: loc.tr('top_places')),
         const SizedBox(height: 10),
         for (final place in sorted.take(5))
           Padding(
@@ -107,12 +110,14 @@ class DashboardTab extends StatelessWidget {
 
 class _HeroStats extends StatelessWidget {
   const _HeroStats({
+    required this.loc,
     required this.cityScore,
     required this.placesCount,
     required this.openIssues,
     required this.avgFixDays,
   });
 
+  final AppLocalizations loc;
   final int cityScore;
   final int placesCount;
   final int openIssues;
@@ -142,10 +147,10 @@ class _HeroStats extends StatelessWidget {
         runSpacing: 12,
         spacing: 12,
         children: [
-          _StatItem(label: 'City score', value: '$cityScore/100'),
-          _StatItem(label: 'Monitored places', value: '$placesCount'),
-          _StatItem(label: 'Open issues', value: '$openIssues'),
-          _StatItem(label: 'Avg time-to-fix', value: '$avgFixDays d'),
+          _StatItem(label: loc.tr('city_score'), value: '$cityScore/100'),
+          _StatItem(label: loc.tr('monitored_places'), value: '$placesCount'),
+          _StatItem(label: loc.tr('open_issues'), value: '$openIssues'),
+          _StatItem(label: loc.tr('avg_fix_time'), value: '$avgFixDays d'),
         ],
       ),
     );
@@ -197,6 +202,7 @@ class _PlaceScoreTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final score = UrbanScoreService.overallScore(place);
     final color = UrbanScoreService.scoreColor(score);
 
@@ -220,7 +226,7 @@ class _PlaceScoreTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${place.type.label} | ${place.address}',
+                  '${loc.placeTypeLabel(place.type)} | ${place.address}',
                   style: const TextStyle(
                     color: AppTheme.textMuted,
                     fontSize: 13,

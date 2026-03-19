@@ -1,132 +1,290 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon_net/core/localization/app_localizations.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
 import 'package:hackathon_net/domain/services/urban_score_service.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
-class PlaceDetailsSheet extends StatelessWidget {
-  const PlaceDetailsSheet({super.key, required this.place});
+class PlaceDetailsSheet extends StatefulWidget {
+  const PlaceDetailsSheet({
+    super.key,
+    required this.place,
+    required this.onAddReview,
+  });
 
   final UrbanPlace place;
+  final Future<UrbanReview> Function({
+    required String message,
+    required UrbanCategory category,
+  })
+  onAddReview;
+
+  @override
+  State<PlaceDetailsSheet> createState() => _PlaceDetailsSheetState();
+}
+
+class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
+  final _reviewController = TextEditingController();
+  final _reviewFormKey = GlobalKey<FormState>();
+  late UrbanPlace _place;
+  UrbanCategory _selectedCategory = UrbanCategory.safety;
+  bool _isSavingReview = false;
+  String? _reviewError;
+
+  @override
+  void initState() {
+    super.initState();
+    _place = widget.place;
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final total = UrbanScoreService.overallScore(place).round();
-    final breakdown = UrbanScoreService.breakdown(place);
+    final loc = AppLocalizations.of(context);
+    final total = UrbanScoreService.overallScore(_place).round();
+    final breakdown = UrbanScoreService.breakdown(_place);
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: GlassPanel(
-          borderRadius: 28,
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppTheme.accent.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(place.type.icon, color: AppTheme.textPrimary),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        place.name,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
+        child: PointerInterceptor(
+          child: GlassPanel(
+            borderRadius: 28,
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppTheme.accent.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          _place.type.icon,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
-                    ),
-                    Text(
-                      '$total/100',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: UrbanScoreService.scoreColor(total.toDouble()),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '${place.type.label} | ${place.address}',
-                  style: const TextStyle(color: AppTheme.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  place.description,
-                  style: const TextStyle(
-                    color: AppTheme.textMuted,
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const SectionEyebrow(label: 'Score breakdown'),
-                const SizedBox(height: 10),
-                for (final category in UrbanCategory.values) ...[
-                  _CategoryRow(
-                    category: category,
-                    value: (breakdown[category] ?? 0).round(),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-                const SizedBox(height: 14),
-                const SectionEyebrow(label: 'Open issues'),
-                const SizedBox(height: 8),
-                if (place.issues.isEmpty)
-                  const Text('No open issues.')
-                else
-                  for (final issue in place.issues)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: GlassPanel(
-                        borderRadius: 18,
-                        padding: const EdgeInsets.all(14),
-                        child: ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.error_outline_rounded),
-                          title: Text(issue.title),
-                          subtitle: Text(
-                            '${issue.category.label} | ${issue.daysOpen} days open',
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _place.name,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
-                    ),
-                const SizedBox(height: 14),
-                const SectionEyebrow(label: 'Citizen comments'),
-                const SizedBox(height: 8),
-                if (place.reviews.isEmpty)
-                  const Text('No comments yet.')
-                else
-                  for (final review in place.reviews)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: GlassPanel(
-                        borderRadius: 18,
-                        padding: const EdgeInsets.all(14),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(review.author),
-                          subtitle: Text(review.message),
-                          trailing: Text('${review.daysAgo}d'),
+                      Text(
+                        '$total/100',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: UrbanScoreService.scoreColor(total.toDouble()),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '${loc.placeTypeLabel(_place.type)} | ${_place.address}',
+                    style: const TextStyle(color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _place.description,
+                    style: const TextStyle(
+                      color: AppTheme.textMuted,
+                      height: 1.6,
                     ),
-              ],
+                  ),
+                  const SizedBox(height: 20),
+                  SectionEyebrow(label: loc.tr('score_breakdown')),
+                  const SizedBox(height: 10),
+                  for (final category in UrbanCategory.values) ...[
+                    _CategoryRow(
+                      category: category,
+                      value: (breakdown[category] ?? 0).round(),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  const SizedBox(height: 14),
+                  SectionEyebrow(label: loc.tr('open_issues')),
+                  const SizedBox(height: 8),
+                  if (_place.issues.isEmpty)
+                    Text(loc.tr('no_open_issues'))
+                  else
+                    for (final issue in _place.issues)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: GlassPanel(
+                          borderRadius: 18,
+                          padding: const EdgeInsets.all(14),
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.error_outline_rounded),
+                            title: Text(issue.title),
+                            subtitle: Text(
+                              '${loc.categoryLabel(issue.category)} | ${issue.daysOpen} ${loc.tr('days_open')}',
+                            ),
+                          ),
+                        ),
+                      ),
+                  const SizedBox(height: 14),
+                  SectionEyebrow(label: loc.tr('citizen_comments')),
+                  const SizedBox(height: 12),
+                  GlassPanel(
+                    borderRadius: 20,
+                    padding: const EdgeInsets.all(16),
+                    blur: false,
+                    backgroundColor: const Color(0xFF161D29),
+                    child: Form(
+                      key: _reviewFormKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            controller: _reviewController,
+                            minLines: 2,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              labelText: loc.tr('leave_comment'),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return loc.tr('enter_comment');
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<UrbanCategory>(
+                            initialValue: _selectedCategory,
+                            dropdownColor: AppTheme.bgTertiary,
+                            decoration: InputDecoration(
+                              labelText: loc.tr('comment_category'),
+                            ),
+                            items: UrbanCategory.values
+                                .map(
+                                  (category) => DropdownMenuItem(
+                                    value: category,
+                                    child: Text(loc.categoryLabel(category)),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value == null) {
+                                return;
+                              }
+                              setState(() {
+                                _selectedCategory = value;
+                              });
+                            },
+                          ),
+                          if (_reviewError != null) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              _reviewError!,
+                              style: const TextStyle(
+                                color: AppTheme.danger,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: FilledButton.icon(
+                              onPressed: _isSavingReview ? null : _submitReview,
+                              icon: const Icon(Icons.send_rounded),
+                              label: Text(
+                                _isSavingReview
+                                    ? loc.tr('adding')
+                                    : loc.tr('post_comment'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_place.reviews.isEmpty)
+                    Text(loc.tr('no_comments'))
+                  else
+                    for (final review in _place.reviews)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: GlassPanel(
+                          borderRadius: 18,
+                          padding: const EdgeInsets.all(14),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(review.author),
+                            subtitle: Text(
+                              '${loc.categoryLabel(review.category)}\n${review.message}',
+                            ),
+                            isThreeLine: true,
+                            trailing: Text('${review.daysAgo}d'),
+                          ),
+                        ),
+                      ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _submitReview() async {
+    if (!_reviewFormKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isSavingReview = true;
+      _reviewError = null;
+    });
+
+    try {
+      final review = await widget.onAddReview(
+        message: _reviewController.text.trim(),
+        category: _selectedCategory,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _place = _place.copyWith(reviews: [review, ..._place.reviews]);
+        _reviewController.clear();
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _reviewError = AppLocalizations.of(context).tr('comment_save_failed');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingReview = false;
+        });
+      }
+    }
   }
 }
 
@@ -138,13 +296,14 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Column(
       children: [
         Row(
           children: [
             Icon(category.icon, size: 16, color: category.color),
             const SizedBox(width: 8),
-            Expanded(child: Text(category.label)),
+            Expanded(child: Text(loc.categoryLabel(category))),
             Text(
               value.toString(),
               style: const TextStyle(fontWeight: FontWeight.w700),

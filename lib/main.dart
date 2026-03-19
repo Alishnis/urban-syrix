@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hackathon_net/app.dart';
+import 'package:hackathon_net/core/localization/language_controller.dart';
 import 'package:hackathon_net/core/config/supabase_config.dart';
 import 'package:hackathon_net/features/auth/data/auth_repository.dart';
 import 'package:hackathon_net/features/auth/presentation/auth_controller.dart';
@@ -20,6 +21,12 @@ Future<void> main() async {
   }
 
   final authController = AuthController(authRepository);
+  final languageController = LanguageController();
 
-  runApp(UrbanScoreApp(authController: authController));
+  runApp(
+    UrbanScoreApp(
+      authController: authController,
+      languageController: languageController,
+    ),
+  );
 }

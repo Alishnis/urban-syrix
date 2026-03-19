@@ -27,11 +27,26 @@ class UrbanScoreService {
           0,
           (sum, review) =>
               sum +
-              (review.sentiment * 3.5) +
-              (review.verifiedInclusivity ? 1.5 : 0),
+              (review.scoreImpact[category] ??
+                  (review.sentiment * 3.5) +
+                      (review.verifiedInclusivity ? 1.5 : 0)),
         );
 
-    return (base - issuePenalty + reviewShift).clamp(18, 96);
+    final crossCategoryReviewShift = place.reviews
+        .where(
+          (review) =>
+              review.category != category &&
+              review.scoreImpact.containsKey(category),
+        )
+        .fold<double>(
+          0,
+          (sum, review) => sum + (review.scoreImpact[category] ?? 0),
+        );
+
+    return (base - issuePenalty + reviewShift + crossCategoryReviewShift).clamp(
+      18,
+      96,
+    );
   }
 
   static double overallScore(UrbanPlace place) {

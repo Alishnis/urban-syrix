@@ -37,6 +37,7 @@ dependencies:
   google_maps_flutter: ^2.5.3
   supabase_flutter: ^2.10.2
   http: ^1.6.0
+  pointer_interceptor: ^0.10.1+2
 
 dev_dependencies:
   flutter_test:

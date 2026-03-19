@@ -1,0 +1,488 @@
+import 'package:flutter/widgets.dart';
+import 'package:hackathon_net/core/localization/app_language.dart';
+import 'package:hackathon_net/core/localization/language_scope.dart';
+import 'package:hackathon_net/domain/models/urban_models.dart';
+
+class AppLocalizations {
+  AppLocalizations(this.language);
+
+  final AppLanguage language;
+
+  static AppLocalizations of(BuildContext context) {
+    return AppLocalizations(LanguageScope.of(context).language);
+  }
+
+  static const _strings = <String, Map<AppLanguage, String>>{
+    'dashboard': {
+      AppLanguage.en: 'Dashboard',
+      AppLanguage.ru: 'Дашборд',
+      AppLanguage.kk: 'Бақылау',
+    },
+    'map': {
+      AppLanguage.en: 'Map',
+      AppLanguage.ru: 'Карта',
+      AppLanguage.kk: 'Карта',
+    },
+    'account': {
+      AppLanguage.en: 'Account',
+      AppLanguage.ru: 'Аккаунт',
+      AppLanguage.kk: 'Аккаунт',
+    },
+    'structural_glass_mode': {
+      AppLanguage.en: 'STRUCTURAL GLASS MODE',
+      AppLanguage.ru: 'РЕЖИМ STRUCTURAL GLASS',
+      AppLanguage.kk: 'STRUCTURAL GLASS РЕЖИМІ',
+    },
+    'live_city_map': {
+      AppLanguage.en: 'Live city map',
+      AppLanguage.ru: 'Живая карта города',
+      AppLanguage.kk: 'Тікелей қала картасы',
+    },
+    'map_metric_hint': {
+      AppLanguage.en: 'Tap anywhere on the map to add a marker.',
+      AppLanguage.ru: 'Нажмите в любую точку карты, чтобы добавить метку.',
+      AppLanguage.kk: 'Белгі қосу үшін картаның кез келген жерін басыңыз.',
+    },
+    'cloud_syncing': {
+      AppLanguage.en: 'Syncing map points with cloud storage...',
+      AppLanguage.ru: 'Синхронизация точек карты с облаком...',
+      AppLanguage.kk: 'Карта нүктелері бұлтпен синхрондалуда...',
+    },
+    'cloud_sync_failed': {
+      AppLanguage.en:
+          'Cloud sync failed. Run the urban_places.sql script in Supabase and verify table policies.',
+      AppLanguage.ru:
+          'Синхронизация с облаком не удалась. Выполните urban_places.sql в Supabase и проверьте политики таблицы.',
+      AppLanguage.kk:
+          'Бұлтпен синхрондау сәтсіз. Supabase ішінде urban_places.sql скриптін орындап, кесте саясаттарын тексеріңіз.',
+    },
+    'new_marker_location': {
+      AppLanguage.en: 'New marker location',
+      AppLanguage.ru: 'Новая точка метки',
+      AppLanguage.kk: 'Жаңа белгі орны',
+    },
+    'selected_point': {
+      AppLanguage.en: 'Selected point',
+      AppLanguage.ru: 'Выбранная точка',
+      AppLanguage.kk: 'Таңдалған нүкте',
+    },
+    'create_map_point': {
+      AppLanguage.en: 'Create map point',
+      AppLanguage.ru: 'Создать точку на карте',
+      AppLanguage.kk: 'Карта нүктесін құру',
+    },
+    'add_city_signal': {
+      AppLanguage.en: 'Add a new city signal directly from the map.',
+      AppLanguage.ru: 'Добавьте новый городской сигнал прямо с карты.',
+      AppLanguage.kk: 'Қалалық жаңа сигналды картадан тікелей қосыңыз.',
+    },
+    'coordinates': {
+      AppLanguage.en: 'Coordinates',
+      AppLanguage.ru: 'Координаты',
+      AppLanguage.kk: 'Координаттар',
+    },
+    'openai_enabled': {
+      AppLanguage.en:
+          'Description and category scores will be processed by OpenAI.',
+      AppLanguage.ru:
+          'Описание и оценки по категориям будут обработаны через OpenAI.',
+      AppLanguage.kk: 'Сипаттама мен санат бағалары OpenAI арқылы өңделеді.',
+    },
+    'openai_disabled': {
+      AppLanguage.en:
+          'OpenAI scoring is disabled. Add OPENAI_API_KEY through --dart-define to enable AI analysis.',
+      AppLanguage.ru:
+          'OpenAI scoring отключён. Добавьте OPENAI_API_KEY через --dart-define.',
+      AppLanguage.kk:
+          'OpenAI scoring өшірулі. OPENAI_API_KEY параметрін --dart-define арқылы беріңіз.',
+    },
+    'name': {
+      AppLanguage.en: 'Name',
+      AppLanguage.ru: 'Название',
+      AppLanguage.kk: 'Атауы',
+    },
+    'type': {
+      AppLanguage.en: 'Type',
+      AppLanguage.ru: 'Тип',
+      AppLanguage.kk: 'Түрі',
+    },
+    'description': {
+      AppLanguage.en: 'Description',
+      AppLanguage.ru: 'Описание',
+      AppLanguage.kk: 'Сипаттама',
+    },
+    'address': {
+      AppLanguage.en: 'Address',
+      AppLanguage.ru: 'Адрес',
+      AppLanguage.kk: 'Мекенжай',
+    },
+    'enter_name': {
+      AppLanguage.en: 'Enter a name.',
+      AppLanguage.ru: 'Введите название.',
+      AppLanguage.kk: 'Атауын енгізіңіз.',
+    },
+    'enter_description': {
+      AppLanguage.en: 'Enter a description.',
+      AppLanguage.ru: 'Введите описание.',
+      AppLanguage.kk: 'Сипаттаманы енгізіңіз.',
+    },
+    'enter_address': {
+      AppLanguage.en: 'Enter an address.',
+      AppLanguage.ru: 'Введите адрес.',
+      AppLanguage.kk: 'Мекенжайды енгізіңіз.',
+    },
+    'address_lookup_failed': {
+      AppLanguage.en: 'Address lookup failed. You can edit it manually.',
+      AppLanguage.ru: 'Не удалось определить адрес. Можно исправить вручную.',
+      AppLanguage.kk: 'Мекенжай табылмады. Қолмен түзете аласыз.',
+    },
+    'ai_failed': {
+      AppLanguage.en:
+          'OpenAI analysis failed. Falling back to default scoring for this point.',
+      AppLanguage.ru:
+          'OpenAI analysis не сработал. Используются базовые оценки.',
+      AppLanguage.kk: 'OpenAI талдауы сәтсіз болды. Әдепкі бағалар қолданылды.',
+    },
+    'save_point_failed': {
+      AppLanguage.en:
+          'Saving to Supabase failed. Check cloud table setup and try again.',
+      AppLanguage.ru:
+          'Не удалось сохранить в Supabase. Проверьте настройку таблицы и повторите попытку.',
+      AppLanguage.kk:
+          'Supabase ішіне сақтау сәтсіз. Кесте баптауын тексеріп, қайта көріңіз.',
+    },
+    'construction_builder_only': {
+      AppLanguage.en:
+          'Construction reports can only be created by builder or admin accounts.',
+      AppLanguage.ru:
+          'Сообщения о стройках могут создавать только аккаунты builder или admin.',
+      AppLanguage.kk:
+          'Құрылыс туралы хабарламаларды тек builder немесе admin аккаунттары жасай алады.',
+    },
+    'map_point_builder_only': {
+      AppLanguage.en: 'Only builder or admin accounts can create map points.',
+      AppLanguage.ru:
+          'Создавать точки на карте могут только аккаунты builder или admin.',
+      AppLanguage.kk:
+          'Карта нүктелерін тек builder немесе admin аккаунттары құра алады.',
+    },
+    'auto_start_metrics': {
+      AppLanguage.en: 'Auto-start metrics',
+      AppLanguage.ru: 'Стартовые метрики',
+      AppLanguage.kk: 'Бастапқы метрикалар',
+    },
+    'auto_start_metrics_body': {
+      AppLanguage.en:
+          'This new point will start with default score bands and join district scoring immediately.',
+      AppLanguage.ru:
+          'Новая точка стартует с базовыми оценками и сразу войдёт в расчёт района.',
+      AppLanguage.kk:
+          'Жаңа нүкте әдепкі бағалармен басталып, аудандық есепке бірден қосылады.',
+    },
+    'cancel': {
+      AppLanguage.en: 'Cancel',
+      AppLanguage.ru: 'Отмена',
+      AppLanguage.kk: 'Бас тарту',
+    },
+    'add_point': {
+      AppLanguage.en: 'Add point',
+      AppLanguage.ru: 'Добавить точку',
+      AppLanguage.kk: 'Нүкте қосу',
+    },
+    'adding': {
+      AppLanguage.en: 'Adding...',
+      AppLanguage.ru: 'Добавление...',
+      AppLanguage.kk: 'Қосылуда...',
+    },
+    'building': {
+      AppLanguage.en: 'Building',
+      AppLanguage.ru: 'Здание',
+      AppLanguage.kk: 'Ғимарат',
+    },
+    'construction': {
+      AppLanguage.en: 'Construction',
+      AppLanguage.ru: 'Стройка',
+      AppLanguage.kk: 'Құрылыс',
+    },
+    'road': {
+      AppLanguage.en: 'Road',
+      AppLanguage.ru: 'Дорога',
+      AppLanguage.kk: 'Жол',
+    },
+    'incident': {
+      AppLanguage.en: 'Incident',
+      AppLanguage.ru: 'Инцидент',
+      AppLanguage.kk: 'Оқиға',
+    },
+    'overall_score': {
+      AppLanguage.en: 'Overall score',
+      AppLanguage.ru: 'Общий балл',
+      AppLanguage.kk: 'Жалпы баға',
+    },
+    'city_score': {
+      AppLanguage.en: 'City score',
+      AppLanguage.ru: 'Оценка города',
+      AppLanguage.kk: 'Қала бағасы',
+    },
+    'monitored_places': {
+      AppLanguage.en: 'Monitored places',
+      AppLanguage.ru: 'Отслеживаемые места',
+      AppLanguage.kk: 'Бақыланатын орындар',
+    },
+    'open_issues': {
+      AppLanguage.en: 'Open issues',
+      AppLanguage.ru: 'Открытые проблемы',
+      AppLanguage.kk: 'Ашық мәселелер',
+    },
+    'avg_fix_time': {
+      AppLanguage.en: 'Avg time-to-fix',
+      AppLanguage.ru: 'Среднее время исправления',
+      AppLanguage.kk: 'Орташа түзету уақыты',
+    },
+    'city_operations': {
+      AppLanguage.en: 'City operations',
+      AppLanguage.ru: 'Городские операции',
+      AppLanguage.kk: 'Қалалық операциялар',
+    },
+    'dashboard_title': {
+      AppLanguage.en: 'Municipal signals in a structural glass control layer.',
+      AppLanguage.ru:
+          'Муниципальные сигналы в слое структурного стеклянного контроля.',
+      AppLanguage.kk: 'Қалалық сигналдар structural glass бақылау қабатында.',
+    },
+    'dashboard_body': {
+      AppLanguage.en:
+          'A real-time overview of score health, maintenance pressure and high-priority places across the city.',
+      AppLanguage.ru:
+          'Обзор в реальном времени по качеству среды, нагрузке на обслуживание и приоритетным точкам города.',
+      AppLanguage.kk:
+          'Қала бойынша орта сапасы, қызмет көрсету қысымы және басым нүктелердің нақты уақыттағы көрінісі.',
+    },
+    'active_alerts': {
+      AppLanguage.en: 'Active alerts',
+      AppLanguage.ru: 'Активные сигналы',
+      AppLanguage.kk: 'Белсенді дабылдар',
+    },
+    'top_places': {
+      AppLanguage.en: 'Top places by urban syrix',
+      AppLanguage.ru: 'Лучшие точки по urban syrix',
+      AppLanguage.kk: 'urban syrix бойынша үздік орындар',
+    },
+    'profile': {
+      AppLanguage.en: 'Profile',
+      AppLanguage.ru: 'Профиль',
+      AppLanguage.kk: 'Профиль',
+    },
+    'operator_profile': {
+      AppLanguage.en: 'Authenticated operator profile.',
+      AppLanguage.ru: 'Профиль авторизованного оператора.',
+      AppLanguage.kk: 'Аутентификацияланған оператор профилі.',
+    },
+    'authenticated_supabase': {
+      AppLanguage.en: 'Authenticated with Supabase',
+      AppLanguage.ru: 'Аутентификация через Supabase',
+      AppLanguage.kk: 'Supabase арқылы аутентификация',
+    },
+    'resident_workspace': {
+      AppLanguage.en: 'Resident workspace',
+      AppLanguage.ru: 'Режим жителя',
+      AppLanguage.kk: 'Тұрғын режимі',
+    },
+    'builder_workspace': {
+      AppLanguage.en: 'Builder workspace',
+      AppLanguage.ru: 'Режим строителя',
+      AppLanguage.kk: 'Құрылысшы режимі',
+    },
+    'admin_access': {
+      AppLanguage.en: 'Administrator access enabled',
+      AppLanguage.ru: 'Доступ администратора включён',
+      AppLanguage.kk: 'Әкімші рұқсаты қосулы',
+    },
+    'resident_role': {
+      AppLanguage.en: 'Resident',
+      AppLanguage.ru: 'Житель',
+      AppLanguage.kk: 'Тұрғын',
+    },
+    'builder_role': {
+      AppLanguage.en: 'Builder',
+      AppLanguage.ru: 'Строитель',
+      AppLanguage.kk: 'Құрылысшы',
+    },
+    'admin_role': {
+      AppLanguage.en: 'Administrator',
+      AppLanguage.ru: 'Администратор',
+      AppLanguage.kk: 'Әкімші',
+    },
+    'unknown_email': {
+      AppLanguage.en: 'Unknown email',
+      AppLanguage.ru: 'Неизвестный email',
+      AppLanguage.kk: 'Белгісіз email',
+    },
+    'user_id': {
+      AppLanguage.en: 'User id',
+      AppLanguage.ru: 'User id',
+      AppLanguage.kk: 'User id',
+    },
+    'role': {
+      AppLanguage.en: 'Role',
+      AppLanguage.ru: 'Роль',
+      AppLanguage.kk: 'Рөл',
+    },
+    'unavailable': {
+      AppLanguage.en: 'Unavailable',
+      AppLanguage.ru: 'Недоступно',
+      AppLanguage.kk: 'Қолжетімсіз',
+    },
+    'resident_workspace_body': {
+      AppLanguage.en:
+          'Use this role for reporting and monitoring local urban issues.',
+      AppLanguage.ru:
+          'Используйте эту роль для жалоб и мониторинга локальных городских проблем.',
+      AppLanguage.kk:
+          'Бұл рөлді жергілікті қалалық мәселелерді хабарлау және бақылау үшін пайдаланыңыз.',
+    },
+    'builder_workspace_body': {
+      AppLanguage.en: 'Use this role for contractor and remediation workflows.',
+      AppLanguage.ru:
+          'Используйте эту роль для подрядчиков и сценариев устранения проблем.',
+      AppLanguage.kk:
+          'Бұл рөлді мердігерлер мен жөндеу процестері үшін пайдаланыңыз.',
+    },
+    'admin_access_body': {
+      AppLanguage.en:
+          'This account can be used for moderation and operational controls.',
+      AppLanguage.ru:
+          'Этот аккаунт можно использовать для модерации и операционного управления.',
+      AppLanguage.kk:
+          'Бұл аккаунтты модерация мен операциялық басқару үшін пайдалануға болады.',
+    },
+    'sign_out': {
+      AppLanguage.en: 'Sign out',
+      AppLanguage.ru: 'Выйти',
+      AppLanguage.kk: 'Шығу',
+    },
+    'please_wait': {
+      AppLanguage.en: 'Please wait...',
+      AppLanguage.ru: 'Подождите...',
+      AppLanguage.kk: 'Күте тұрыңыз...',
+    },
+    'score_breakdown': {
+      AppLanguage.en: 'Score breakdown',
+      AppLanguage.ru: 'Разбивка оценки',
+      AppLanguage.kk: 'Баға бөлінісі',
+    },
+    'citizen_comments': {
+      AppLanguage.en: 'Citizen comments',
+      AppLanguage.ru: 'Комментарии жителей',
+      AppLanguage.kk: 'Тұрғын пікірлері',
+    },
+    'leave_comment': {
+      AppLanguage.en: 'Leave a comment',
+      AppLanguage.ru: 'Оставить комментарий',
+      AppLanguage.kk: 'Пікір қалдыру',
+    },
+    'enter_comment': {
+      AppLanguage.en: 'Enter a comment.',
+      AppLanguage.ru: 'Введите комментарий.',
+      AppLanguage.kk: 'Пікір енгізіңіз.',
+    },
+    'comment_category': {
+      AppLanguage.en: 'Comment category',
+      AppLanguage.ru: 'Категория комментария',
+      AppLanguage.kk: 'Пікір санаты',
+    },
+    'post_comment': {
+      AppLanguage.en: 'Post comment',
+      AppLanguage.ru: 'Отправить комментарий',
+      AppLanguage.kk: 'Пікір жіберу',
+    },
+    'comment_save_failed': {
+      AppLanguage.en:
+          'Saving the comment failed. Check Supabase reviews setup and try again.',
+      AppLanguage.ru:
+          'Не удалось сохранить комментарий. Проверьте настройку отзывов в Supabase.',
+      AppLanguage.kk:
+          'Пікірді сақтау сәтсіз. Supabase ішіндегі review баптауын тексеріңіз.',
+    },
+    'no_open_issues': {
+      AppLanguage.en: 'No open issues.',
+      AppLanguage.ru: 'Открытых проблем нет.',
+      AppLanguage.kk: 'Ашық мәселе жоқ.',
+    },
+    'no_comments': {
+      AppLanguage.en: 'No comments yet.',
+      AppLanguage.ru: 'Комментариев пока нет.',
+      AppLanguage.kk: 'Әзірге пікір жоқ.',
+    },
+    'days_open': {
+      AppLanguage.en: 'days open',
+      AppLanguage.ru: 'дней открыто',
+      AppLanguage.kk: 'күн ашық',
+    },
+    'mobility': {
+      AppLanguage.en: 'Mobility',
+      AppLanguage.ru: 'Мобильность',
+      AppLanguage.kk: 'Қозғалыс',
+    },
+    'environment': {
+      AppLanguage.en: 'Environment',
+      AppLanguage.ru: 'Экология',
+      AppLanguage.kk: 'Экология',
+    },
+    'resources': {
+      AppLanguage.en: 'Resources',
+      AppLanguage.ru: 'Ресурсы',
+      AppLanguage.kk: 'Ресурстар',
+    },
+    'transparency': {
+      AppLanguage.en: 'Transparency',
+      AppLanguage.ru: 'Прозрачность',
+      AppLanguage.kk: 'Ашықтық',
+    },
+    'inclusivity': {
+      AppLanguage.en: 'Inclusivity',
+      AppLanguage.ru: 'Инклюзивность',
+      AppLanguage.kk: 'Инклюзивтілік',
+    },
+    'safety': {
+      AppLanguage.en: 'Safety',
+      AppLanguage.ru: 'Безопасность',
+      AppLanguage.kk: 'Қауіпсіздік',
+    },
+  };
+
+  String tr(String key) => _strings[key]?[language] ?? key;
+
+  String placeTypeLabel(UrbanPlaceType type) => switch (type) {
+    UrbanPlaceType.building => tr('building'),
+    UrbanPlaceType.construction => tr('construction'),
+    UrbanPlaceType.road => tr('road'),
+    UrbanPlaceType.incident => tr('incident'),
+  };
+
+  String categoryLabel(UrbanCategory category) => switch (category) {
+    UrbanCategory.mobility => tr('mobility'),
+    UrbanCategory.environment => tr('environment'),
+    UrbanCategory.resources => tr('resources'),
+    UrbanCategory.transparency => tr('transparency'),
+    UrbanCategory.inclusivity => tr('inclusivity'),
+    UrbanCategory.safety => tr('safety'),
+  };
+
+  String criterionLabel(ScoreCriterion criterion) => switch (criterion) {
+    ScoreCriterion.overall => tr('overall_score'),
+    ScoreCriterion.mobility => tr('mobility'),
+    ScoreCriterion.environment => tr('environment'),
+    ScoreCriterion.resources => tr('resources'),
+    ScoreCriterion.transparency => tr('transparency'),
+    ScoreCriterion.inclusivity => tr('inclusivity'),
+    ScoreCriterion.safety => tr('safety'),
+  };
+
+  String roleLabel(String roleKey) => switch (roleKey) {
+    'resident' => tr('resident_role'),
+    'builder' => tr('builder_role'),
+    'admin' => tr('admin_role'),
+    _ => tr('resident_role'),
+  };
+}

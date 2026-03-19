@@ -1,28 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon_net/core/config/openai_config.dart';
+import 'package:hackathon_net/core/localization/app_localizations.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
+import 'package:hackathon_net/features/auth/domain/app_role.dart';
+import 'package:hackathon_net/features/map/data/openai_place_analysis_service.dart';
 import 'package:hackathon_net/features/map/data/reverse_geocoding_service.dart';
+import 'package:hackathon_net/features/map/models/place_ai_assessment.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 class CreatePlaceSheet extends StatefulWidget {
   const CreatePlaceSheet({
     super.key,
     required this.latitude,
     required this.longitude,
+    required this.role,
     required this.reverseGeocodingService,
     required this.onCreate,
   });
 
   final double latitude;
   final double longitude;
+  final AppRole role;
   final ReverseGeocodingService reverseGeocodingService;
-  final ValueChanged<UrbanPlace> onCreate;
+  final Future<void> Function(UrbanPlace place) onCreate;
 
   @override
   State<CreatePlaceSheet> createState() => _CreatePlaceSheetState();
 }
 
 class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
+  final OpenAiPlaceAnalysisService _openAiPlaceAnalysisService =
+      const OpenAiPlaceAnalysisService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -32,6 +42,8 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   bool _isResolvingAddress = true;
   bool _isSaving = false;
   String? _addressError;
+  String? _aiError;
+  String? _saveError;
 
   @override
   void initState() {
@@ -49,150 +61,206 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final allowedTypes = _allowedTypes;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: GlassPanel(
-          borderRadius: 28,
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SectionEyebrow(label: 'Create map point'),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Add a new city signal directly from the map.',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Coordinates: ${widget.latitude.toStringAsFixed(5)}, ${widget.longitude.toStringAsFixed(5)}',
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Enter a name.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<UrbanPlaceType>(
-                    initialValue: _selectedType,
-                    dropdownColor: AppTheme.bgTertiary,
-                    decoration: const InputDecoration(labelText: 'Type'),
-                    items: UrbanPlaceType.values
-                        .map(
-                          (type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(type.label),
+        child: PointerInterceptor(
+          child: GlassPanel(
+            borderRadius: 28,
+            padding: const EdgeInsets.all(20),
+            blur: false,
+            backgroundColor: const Color(0xFF161D29),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context).inputDecorationTheme
+                    .copyWith(fillColor: const Color(0xFF232B39)),
+              ),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SectionEyebrow(label: loc.tr('create_map_point')),
+                      const SizedBox(height: 12),
+                      Text(
+                        loc.tr('add_city_signal'),
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${loc.tr('coordinates')}: ${widget.latitude.toStringAsFixed(5)}, ${widget.longitude.toStringAsFixed(5)}',
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        OpenAiConfig.isConfigured
+                            ? loc.tr('openai_enabled')
+                            : loc.tr('openai_disabled'),
+                        style: TextStyle(
+                          color: OpenAiConfig.isConfigured
+                              ? AppTheme.accent
+                              : AppTheme.textMuted,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      if (!_canCreateConstruction) ...[
+                        Text(
+                          loc.tr('construction_builder_only'),
+                          style: const TextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 13,
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() {
-                        _selectedType = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    minLines: 3,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Enter a description.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _addressController,
-                    minLines: 2,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: 'Address',
-                      suffixIcon: _isResolvingAddress
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppTheme.accent,
-                                ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(labelText: loc.tr('name')),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return loc.tr('enter_name');
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<UrbanPlaceType>(
+                        initialValue: _selectedType,
+                        dropdownColor: AppTheme.bgTertiary,
+                        decoration: InputDecoration(labelText: loc.tr('type')),
+                        items: allowedTypes
+                            .map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(loc.placeTypeLabel(type)),
                               ),
                             )
-                          : IconButton(
-                              onPressed: _resolveAddress,
-                              icon: const Icon(Icons.refresh_rounded),
-                            ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Enter an address.';
-                      }
-                      return null;
-                    },
-                  ),
-                  if (_addressError != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _addressError!,
-                      style: const TextStyle(
-                        color: AppTheme.danger,
-                        fontWeight: FontWeight.w600,
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedType = value;
+                          });
+                        },
                       ),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  _CategoryPreview(type: _selectedType),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _isSaving
-                              ? null
-                              : () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _descriptionController,
+                        minLines: 3,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          labelText: loc.tr('description'),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return loc.tr('enter_description');
+                          }
+                          return null;
+                        },
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: _isSaving ? null : _save,
-                          child: Text(
-                            _isSaving ? 'Adding...' : 'Add point',
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _addressController,
+                        minLines: 2,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: loc.tr('address'),
+                          suffixIcon: _isResolvingAddress
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppTheme.accent,
+                                    ),
+                                  ),
+                                )
+                              : IconButton(
+                                  onPressed: _resolveAddress,
+                                  icon: const Icon(Icons.refresh_rounded),
+                                ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return loc.tr('enter_address');
+                          }
+                          return null;
+                        },
+                      ),
+                      if (_addressError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _addressError!,
+                          style: const TextStyle(
+                            color: AppTheme.danger,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
+                      ],
+                      if (_aiError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _aiError!,
+                          style: const TextStyle(
+                            color: AppTheme.danger,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      if (_saveError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _saveError!,
+                          style: const TextStyle(
+                            color: AppTheme.danger,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      _CategoryPreview(type: _selectedType),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: _isSaving
+                                  ? null
+                                  : () => Navigator.of(context).pop(),
+                              child: Text(loc.tr('cancel')),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: _isSaving ? null : _save,
+                              child: Text(
+                                _isSaving
+                                    ? loc.tr('adding')
+                                    : loc.tr('add_point'),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -222,7 +290,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       }
       _addressController.text =
           '${widget.latitude.toStringAsFixed(5)}, ${widget.longitude.toStringAsFixed(5)}';
-      _addressError = 'Address lookup failed. You can edit it manually.';
+      _addressError = AppLocalizations.of(context).tr('address_lookup_failed');
     } finally {
       if (mounted) {
         setState(() {
@@ -236,34 +304,111 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    if (!_canCreateMapPoint) {
+      setState(() {
+        _saveError = AppLocalizations.of(context).tr('map_point_builder_only');
+      });
+      return;
+    }
+    if (_selectedType == UrbanPlaceType.construction &&
+        !_canCreateConstruction) {
+      setState(() {
+        _saveError = AppLocalizations.of(
+          context,
+        ).tr('construction_builder_only');
+      });
+      return;
+    }
 
     setState(() {
       _isSaving = true;
+      _aiError = null;
+      _saveError = null;
     });
+
+    final rawDescription = _descriptionController.text.trim();
+    final name = _nameController.text.trim();
+    final address = _addressController.text.trim();
+    final assessment = await _buildAssessment(
+      name: name,
+      description: rawDescription,
+      address: address,
+    );
 
     final place = UrbanPlace(
       id: 'user_${DateTime.now().microsecondsSinceEpoch}',
-      name: _nameController.text.trim(),
+      name: name,
       type: _selectedType,
-      address: _addressController.text.trim(),
-      description: _descriptionController.text.trim(),
+      address: address,
+      description: assessment.description,
       location: GeoPoint(
         latitude: widget.latitude,
         longitude: widget.longitude,
       ),
       developer: 'Citizen report',
-      trafficRisk: _trafficRiskFor(_selectedType),
-      co2Footprint: _co2FootprintFor(_selectedType),
-      greenCoverage: _greenCoverageFor(_selectedType),
-      baseScores: _baseScoresFor(_selectedType),
+      trafficRisk: assessment.trafficRisk,
+      co2Footprint: assessment.co2Footprint,
+      greenCoverage: assessment.greenCoverage,
+      baseScores: assessment.baseScores,
       issues: _defaultIssuesFor(_selectedType),
       reviews: const [],
     );
 
-    widget.onCreate(place);
-    if (mounted) {
-      Navigator.of(context).pop();
+    try {
+      await widget.onCreate(place);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _saveError = AppLocalizations.of(context).tr('save_point_failed');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
+  }
+
+  Future<PlaceAiAssessment> _buildAssessment({
+    required String name,
+    required String description,
+    required String address,
+  }) async {
+    if (!OpenAiConfig.isConfigured) {
+      return _fallbackAssessment(description);
+    }
+
+    try {
+      return await _openAiPlaceAnalysisService.analyze(
+        name: name,
+        type: _selectedType,
+        description: description,
+        address: address,
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _aiError = AppLocalizations.of(context).tr('ai_failed');
+        });
+      }
+      return _fallbackAssessment(description);
+    }
+  }
+
+  PlaceAiAssessment _fallbackAssessment(String description) {
+    return PlaceAiAssessment(
+      description: description,
+      baseScores: _baseScoresFor(_selectedType),
+      trafficRisk: _trafficRiskFor(_selectedType),
+      co2Footprint: _co2FootprintFor(_selectedType),
+      greenCoverage: _greenCoverageFor(_selectedType),
+    );
   }
 
   Map<UrbanCategory, double> _baseScoresFor(UrbanPlaceType type) {
@@ -386,6 +531,20 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
         return 24;
     }
   }
+
+  bool get _canCreateConstruction =>
+      widget.role == AppRole.builder || widget.role == AppRole.admin;
+
+  bool get _canCreateMapPoint => _canCreateConstruction;
+
+  List<UrbanPlaceType> get _allowedTypes {
+    if (_canCreateConstruction) {
+      return UrbanPlaceType.values;
+    }
+    return UrbanPlaceType.values
+        .where((type) => type != UrbanPlaceType.construction)
+        .toList(growable: false);
+  }
 }
 
 class _CategoryPreview extends StatelessWidget {
@@ -395,28 +554,23 @@ class _CategoryPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return GlassPanel(
       borderRadius: 20,
       padding: const EdgeInsets.all(16),
-      backgroundColor: AppTheme.bgTertiary.withValues(alpha: 0.9),
+      backgroundColor: const Color(0xFF101729),
       blur: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Auto-start metrics',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
+          Text(
+            loc.tr('auto_start_metrics'),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
-            'This new ${type.label.toLowerCase()} will start with default score bands and join district scoring immediately.',
-            style: const TextStyle(
-              color: AppTheme.textSecondary,
-              height: 1.5,
-            ),
+            '${loc.tr('auto_start_metrics_body')} (${loc.placeTypeLabel(type).toLowerCase()})',
+            style: const TextStyle(color: AppTheme.textSecondary, height: 1.5),
           ),
         ],
       ),

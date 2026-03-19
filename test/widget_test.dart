@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hackathon_net/app.dart';
+import 'package:hackathon_net/core/localization/language_controller.dart';
 import 'package:hackathon_net/features/auth/data/auth_repository.dart';
 import 'package:hackathon_net/features/auth/domain/app_role.dart';
 import 'package:hackathon_net/features/auth/domain/user_profile.dart';
@@ -12,8 +13,14 @@ void main() {
   ) async {
     final repository = _FakeAuthRepository();
     final controller = AuthController(repository);
+    final languageController = LanguageController();
 
-    await tester.pumpWidget(UrbanScoreApp(authController: controller));
+    await tester.pumpWidget(
+      UrbanScoreApp(
+        authController: controller,
+        languageController: languageController,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Supabase is not configured'), findsOneWidget);
