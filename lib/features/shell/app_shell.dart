@@ -15,19 +15,28 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  final List<UrbanPlace> _places = MockUrbanRepository().getPlaces();
+  late final List<UrbanPlace> _places;
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _places = [...MockUrbanRepository().getPlaces()];
+  }
 
   @override
   Widget build(BuildContext context) {
     const titles = [
-      'UrbanScore Dashboard',
-      'UrbanScore Map',
-      'UrbanScore Account',
+      'urban syrix Dashboard',
+      'urban syrix Map',
+      'urban syrix Account',
     ];
     final pages = [
       DashboardTab(places: _places),
-      MapTab(places: _places),
+      MapTab(
+        places: _places,
+        onCreatePlace: _addPlace,
+      ),
       const AccountTab(),
     ];
 
@@ -50,14 +59,15 @@ class _AppShellState extends State<AppShell> {
                         child: Row(
                           children: [
                             Text(
-                              'city',
+                              'urban',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
+                            SizedBox(width: 6),
                             Text(
-                              'mgr+',
+                              'syrix',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800,
@@ -130,6 +140,12 @@ class _AppShellState extends State<AppShell> {
         ),
       ),
     );
+  }
+
+  void _addPlace(UrbanPlace place) {
+    setState(() {
+      _places.insert(0, place);
+    });
   }
 }
 

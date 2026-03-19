@@ -69,7 +69,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   const SectionEyebrow(label: 'Account access'),
                                   const SizedBox(height: 18),
                                   const Text(
-                                    'Welcome to UrbanScore.',
+                                    'Welcome to urban syrix.',
                                     style: TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.w800,
@@ -292,7 +292,7 @@ class _AuthHero extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 12),
-                const SectionEyebrow(label: 'UrbanScore control layer'),
+                const SectionEyebrow(label: 'urban syrix control layer'),
                 const SizedBox(height: 18),
                 const Text(
                   'Your city,\ndecoded\nin real time.',

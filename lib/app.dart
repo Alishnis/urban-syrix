@@ -15,7 +15,7 @@ class UrbanScoreApp extends StatelessWidget {
       controller: authController,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'UrbanScore',
+        title: 'urban syrix',
         theme: AppTheme.theme,
         home: const RootGate(),
       ),

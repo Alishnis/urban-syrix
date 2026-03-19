@@ -3,20 +3,29 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
+import 'package:hackathon_net/features/map/data/reverse_geocoding_service.dart';
 import 'package:hackathon_net/features/map/map_styles.dart';
 import 'package:hackathon_net/domain/services/urban_score_service.dart';
+import 'package:hackathon_net/features/map/widgets/create_place_sheet.dart';
 import 'package:hackathon_net/features/map/widgets/place_details_sheet.dart';
 
 class MapTab extends StatefulWidget {
-  const MapTab({super.key, required this.places});
+  const MapTab({
+    super.key,
+    required this.places,
+    required this.onCreatePlace,
+  });
 
   final List<UrbanPlace> places;
+  final ValueChanged<UrbanPlace> onCreatePlace;
 
   @override
   State<MapTab> createState() => _MapTabState();
 }
 
 class _MapTabState extends State<MapTab> {
+  final ReverseGeocodingService _reverseGeocodingService =
+      const ReverseGeocodingService();
   ScoreCriterion _criterion = ScoreCriterion.overall;
 
   @override
@@ -47,6 +56,7 @@ class _MapTabState extends State<MapTab> {
               myLocationButtonEnabled: false,
               mapToolbarEnabled: false,
               compassEnabled: true,
+              onLongPress: _openCreatePlaceSheet,
             ),
           ),
           Positioned(
@@ -130,6 +140,8 @@ class _MapTabState extends State<MapTab> {
                     child: GlassPanel(
                       borderRadius: 24,
                       padding: const EdgeInsets.all(16),
+                      blur: false,
+                      backgroundColor: const Color(0xFF1A2434),
                       child: InkWell(
                         onTap: () => _openDetails(place),
                         child: Column(
@@ -222,6 +234,23 @@ class _MapTabState extends State<MapTab> {
       builder: (_) => FractionallySizedBox(
         heightFactor: 0.9,
         child: PlaceDetailsSheet(place: place),
+      ),
+    );
+  }
+
+  void _openCreatePlaceSheet(LatLng target) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.92,
+        child: CreatePlaceSheet(
+          latitude: target.latitude,
+          longitude: target.longitude,
+          reverseGeocodingService: _reverseGeocodingService,
+          onCreate: widget.onCreatePlace,
+        ),
       ),
     );
   }

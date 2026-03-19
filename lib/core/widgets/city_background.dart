@@ -50,28 +50,36 @@ class GlassPanel extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.borderRadius = 24,
+    this.backgroundColor = AppTheme.glassLight,
+    this.blur = true,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double borderRadius;
+  final Color backgroundColor;
+  final bool blur;
 
   @override
   Widget build(BuildContext context) {
+    final panel = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: AppTheme.glassBorder),
+      ),
+      child: child,
+    );
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: AppTheme.glassLight,
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: AppTheme.glassBorder),
-          ),
-          child: child,
-        ),
-      ),
+      child: blur
+          ? BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: panel,
+            )
+          : panel,
     );
   }
 }

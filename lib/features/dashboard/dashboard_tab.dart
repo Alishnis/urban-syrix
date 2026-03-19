@@ -93,7 +93,7 @@ class DashboardTab extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 12),
-        const SectionEyebrow(label: 'Top places by UrbanScore'),
+        const SectionEyebrow(label: 'Top places by urban syrix'),
         const SizedBox(height: 10),
         for (final place in sorted.take(5))
           Padding(

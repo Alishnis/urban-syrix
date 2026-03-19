@@ -1,6 +1,6 @@
-# hackathon_net
+# urban syrix
 
-UrbanScore Flutter app with Supabase-based account authentication.
+urban syrix Flutter app with Supabase-based account authentication.
 
 ## Supabase setup
 
