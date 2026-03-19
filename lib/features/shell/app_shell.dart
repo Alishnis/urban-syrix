@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hackathon_net/core/config/supabase_config.dart';
 import 'package:hackathon_net/core/localization/app_language.dart';
 import 'package:hackathon_net/core/localization/app_localizations.dart';
+import 'package:hackathon_net/core/localization/language_controller.dart';
 import 'package:hackathon_net/core/localization/language_scope.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
@@ -43,6 +44,8 @@ class _AppShellState extends State<AppShell> {
     final auth = AuthScope.of(context);
     final loc = AppLocalizations.of(context);
     final languageController = LanguageScope.of(context);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final compactHeader = screenWidth < 860;
     final titles = [
       'urban syrix ${loc.tr('dashboard')}',
       'urban syrix ${loc.tr('map')}',
@@ -72,100 +75,50 @@ class _AppShellState extends State<AppShell> {
                     horizontal: 18,
                     vertical: 14,
                   ),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Row(
+                  child: compactHeader
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'urban',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
+                            Row(
+                              children: [
+                                const Expanded(child: _BrandRow()),
+                                _LanguagePicker(
+                                  languageController: languageController,
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            const Expanded(child: _BrandRow()),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                titles[_selectedIndex],
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textSecondary,
+                                ),
                               ),
                             ),
-                            SizedBox(width: 6),
-                            Text(
-                              'syrix',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.accent,
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    _LanguagePicker(
+                                      languageController: languageController,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            SizedBox(width: 12),
-                            _LiveDot(),
                           ],
                         ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          titles[_selectedIndex],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              PopupMenuButton<AppLanguage>(
-                                initialValue: languageController.language,
-                                onSelected: languageController.setLanguage,
-                                color: AppTheme.bgTertiary,
-                                itemBuilder: (context) {
-                                  return AppLanguage.values
-                                      .map(
-                                        (language) => PopupMenuItem(
-                                          value: language,
-                                          child: Text(language.label),
-                                        ),
-                                      )
-                                      .toList();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.glassLight,
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(
-                                      color: AppTheme.glassBorder,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    languageController.language.label,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                loc.tr('structural_glass_mode'),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.4,
-                                  color: AppTheme.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
               if (_isSyncingPlaces || _placesError != null)
@@ -339,6 +292,74 @@ class _AppShellState extends State<AppShell> {
       }
       _places[index] = _places[index].copyWith(reviews: reviews);
     }
+  }
+}
+
+class _BrandRow extends StatelessWidget {
+  const _BrandRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Flexible(
+          child: Text(
+            'urban',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+        ),
+        SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            'syrix',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.accent,
+            ),
+          ),
+        ),
+        SizedBox(width: 12),
+        _LiveDot(),
+      ],
+    );
+  }
+}
+
+class _LanguagePicker extends StatelessWidget {
+  const _LanguagePicker({required this.languageController});
+
+  final LanguageController languageController;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<AppLanguage>(
+      initialValue: languageController.language,
+      onSelected: languageController.setLanguage,
+      color: AppTheme.bgTertiary,
+      itemBuilder: (context) {
+        return AppLanguage.values
+            .map(
+              (language) =>
+                  PopupMenuItem(value: language, child: Text(language.label)),
+            )
+            .toList();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.glassLight,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppTheme.glassBorder),
+        ),
+        child: Text(
+          languageController.language.label,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
   }
 }
 

@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter Chrome (env.json)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "debug",
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--dart-define-from-file=env.json"
+      ]
+    },
+    {
+      "name": "Flutter Android (Selected Device, env.json)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define-from-file=env.json"
+      ]
+    }
+  ]
+}

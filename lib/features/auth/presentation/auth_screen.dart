@@ -43,165 +43,70 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final vertical = constraints.maxWidth < 900;
-                    return Flex(
-                      direction: vertical ? Axis.vertical : Axis.horizontal,
+                    if (vertical) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: Column(
+                          children: [
+                            _AuthHero(isLogin: _isLogin),
+                            const SizedBox(height: 20),
+                            _AuthFormCard(
+                              formKey: _formKey,
+                              emailController: _emailController,
+                              passwordController: _passwordController,
+                              isLogin: _isLogin,
+                              selectedRole: _selectedRole,
+                              errorText: _errorText,
+                              isBusy: auth.isBusy,
+                              onRoleChanged: (value) {
+                                setState(() {
+                                  _selectedRole = value;
+                                });
+                              },
+                              onSubmit: _submit,
+                              onToggleMode: () {
+                                setState(() {
+                                  _isLogin = !_isLogin;
+                                  _errorText = null;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Row(
                       children: [
                         Expanded(
                           flex: 11,
                           child: Padding(
-                            padding: EdgeInsets.only(
-                              right: vertical ? 0 : 24,
-                              bottom: vertical ? 24 : 0,
-                            ),
+                            padding: const EdgeInsets.only(right: 24),
                             child: _AuthHero(isLogin: _isLogin),
                           ),
                         ),
                         Expanded(
                           flex: 9,
-                          child: GlassPanel(
-                            padding: const EdgeInsets.all(28),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SectionEyebrow(label: 'Account access'),
-                                  const SizedBox(height: 18),
-                                  const Text(
-                                    'Welcome to urban syrix.',
-                                    style: TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w800,
-                                      height: 1.05,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    _isLogin
-                                        ? 'Sign in to continue into the city operations workspace.'
-                                        : 'Create an account and choose the role that fits your city workflow.',
-                                    style: const TextStyle(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 16,
-                                      height: 1.6,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Email',
-                                    ),
-                                    validator: (value) {
-                                      if (value == null ||
-                                          value.trim().isEmpty) {
-                                        return 'Enter your email.';
-                                      }
-                                      if (!value.contains('@')) {
-                                        return 'Enter a valid email.';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-                                  TextFormField(
-                                    controller: _passwordController,
-                                    obscureText: true,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Password',
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Enter your password.';
-                                      }
-                                      if (value.length < 6) {
-                                        return 'Use at least 6 characters.';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  if (!_isLogin) ...[
-                                    const SizedBox(height: 16),
-                                    DropdownButtonFormField<AppRole>(
-                                      initialValue: _selectedRole,
-                                      dropdownColor: AppTheme.bgTertiary,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Account type',
-                                      ),
-                                      items: const [
-                                        DropdownMenuItem(
-                                          value: AppRole.resident,
-                                          child: Text('Resident'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: AppRole.builder,
-                                          child: Text('Builder'),
-                                        ),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value == null) {
-                                          return;
-                                        }
-                                        setState(() {
-                                          _selectedRole = value;
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(height: 10),
-                                    const Text(
-                                      'Administrator accounts are assigned manually from Supabase.',
-                                      style: TextStyle(
-                                        color: AppTheme.textMuted,
-                                      ),
-                                    ),
-                                  ],
-                                  if (_errorText != null) ...[
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      _errorText!,
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.error,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 24),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: FilledButton(
-                                      onPressed: auth.isBusy ? null : _submit,
-                                      child: Text(
-                                        auth.isBusy
-                                            ? 'Please wait...'
-                                            : _isLogin
-                                            ? 'Sign in'
-                                            : 'Create account',
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Center(
-                                    child: TextButton(
-                                      onPressed: auth.isBusy
-                                          ? null
-                                          : () {
-                                              setState(() {
-                                                _isLogin = !_isLogin;
-                                                _errorText = null;
-                                              });
-                                            },
-                                      child: Text(
-                                        _isLogin
-                                            ? 'Need an account? Register'
-                                            : 'Already have an account? Sign in',
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          child: _AuthFormCard(
+                            formKey: _formKey,
+                            emailController: _emailController,
+                            passwordController: _passwordController,
+                            isLogin: _isLogin,
+                            selectedRole: _selectedRole,
+                            errorText: _errorText,
+                            isBusy: auth.isBusy,
+                            onRoleChanged: (value) {
+                              setState(() {
+                                _selectedRole = value;
+                              });
+                            },
+                            onSubmit: _submit,
+                            onToggleMode: () {
+                              setState(() {
+                                _isLogin = !_isLogin;
+                                _errorText = null;
+                              });
+                            },
                           ),
                         ),
                       ],
@@ -259,6 +164,7 @@ class _AuthHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 700;
     const cards = [
       _SignalCard(
         title: 'Pipe replacement in district 7',
@@ -283,47 +189,194 @@ class _AuthHero extends StatelessWidget {
       ),
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
-                const SectionEyebrow(label: 'urban syrix control layer'),
-                const SizedBox(height: 18),
-                const Text(
-                  'Your city,\ndecoded\nin real time.',
-                  style: TextStyle(
-                    fontSize: 64,
-                    height: 0.95,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -2.8,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  isLogin
-                      ? 'Return to a live operational layer for resident signals, builder workflows and municipal oversight.'
-                      : 'Create a role-based account and enter the same structural glass interface used across the city workspace.',
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 18,
-                    height: 1.7,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                for (final card in cards) ...[
-                  card,
-                  const SizedBox(height: 12),
-                ],
-              ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          const SectionEyebrow(label: 'urban syrix control layer'),
+          const SizedBox(height: 18),
+          Text(
+            'Your city,\ndecoded\nin real time.',
+            style: TextStyle(
+              fontSize: compact ? 44 : 64,
+              height: 0.95,
+              fontWeight: FontWeight.w900,
+              letterSpacing: compact ? -1.6 : -2.8,
             ),
           ),
+          const SizedBox(height: 18),
+          Text(
+            isLogin
+                ? 'Return to a live operational layer for resident signals, builder workflows and municipal oversight.'
+                : 'Create a role-based account and enter the same structural glass interface used across the city workspace.',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: compact ? 16 : 18,
+              height: 1.7,
+            ),
+          ),
+          const SizedBox(height: 28),
+          for (final card in cards) ...[card, const SizedBox(height: 12)],
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthFormCard extends StatelessWidget {
+  const _AuthFormCard({
+    required this.formKey,
+    required this.emailController,
+    required this.passwordController,
+    required this.isLogin,
+    required this.selectedRole,
+    required this.errorText,
+    required this.isBusy,
+    required this.onRoleChanged,
+    required this.onSubmit,
+    required this.onToggleMode,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final bool isLogin;
+  final AppRole selectedRole;
+  final String? errorText;
+  final bool isBusy;
+  final ValueChanged<AppRole> onRoleChanged;
+  final VoidCallback onSubmit;
+  final VoidCallback onToggleMode;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassPanel(
+      padding: const EdgeInsets.all(28),
+      child: Form(
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionEyebrow(label: 'Account access'),
+            const SizedBox(height: 18),
+            const Text(
+              'Welcome to urban syrix.',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                height: 1.05,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              isLogin
+                  ? 'Sign in to continue into the city operations workspace.'
+                  : 'Create an account and choose the role that fits your city workflow.',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 16,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email'),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Enter your email.';
+                }
+                if (!value.contains('@')) {
+                  return 'Enter a valid email.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Enter your password.';
+                }
+                if (value.length < 6) {
+                  return 'Use at least 6 characters.';
+                }
+                return null;
+              },
+            ),
+            if (!isLogin) ...[
+              const SizedBox(height: 16),
+              DropdownButtonFormField<AppRole>(
+                value: selectedRole,
+                dropdownColor: AppTheme.bgTertiary,
+                decoration: const InputDecoration(labelText: 'Account type'),
+                items: const [
+                  DropdownMenuItem(
+                    value: AppRole.resident,
+                    child: Text('Resident'),
+                  ),
+                  DropdownMenuItem(
+                    value: AppRole.builder,
+                    child: Text('Builder'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value == null) {
+                    return;
+                  }
+                  onRoleChanged(value);
+                },
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Administrator accounts are assigned manually from Supabase.',
+                style: TextStyle(color: AppTheme.textMuted),
+              ),
+            ],
+            if (errorText != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                errorText!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: isBusy ? null : onSubmit,
+                child: Text(
+                  isBusy
+                      ? 'Please wait...'
+                      : isLogin
+                      ? 'Sign in'
+                      : 'Create account',
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton(
+                onPressed: isBusy ? null : onToggleMode,
+                child: Text(
+                  isLogin
+                      ? 'Need an account? Register'
+                      : 'Already have an account? Sign in',
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

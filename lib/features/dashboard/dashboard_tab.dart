@@ -143,15 +143,28 @@ class _HeroStats extends StatelessWidget {
           ),
         ],
       ),
-      child: Wrap(
-        runSpacing: 12,
-        spacing: 12,
-        children: [
-          _StatItem(label: loc.tr('city_score'), value: '$cityScore/100'),
-          _StatItem(label: loc.tr('monitored_places'), value: '$placesCount'),
-          _StatItem(label: loc.tr('open_issues'), value: '$openIssues'),
-          _StatItem(label: loc.tr('avg_fix_time'), value: '$avgFixDays d'),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final crossAxisCount = width >= 760 ? 4 : 2;
+          return GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: width >= 760 ? 1.65 : 1.5,
+            children: [
+              _StatItem(label: loc.tr('city_score'), value: '$cityScore/100'),
+              _StatItem(
+                label: loc.tr('monitored_places'),
+                value: '$placesCount',
+              ),
+              _StatItem(label: loc.tr('open_issues'), value: '$openIssues'),
+              _StatItem(label: loc.tr('avg_fix_time'), value: '$avgFixDays d'),
+            ],
+          );
+        },
       ),
     );
   }
@@ -166,7 +179,6 @@ class _StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 155,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),

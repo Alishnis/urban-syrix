@@ -54,6 +54,13 @@ class _MapTabState extends State<MapTab> {
     final loc = AppLocalizations.of(context);
     final markers = _buildMarkers();
     final startPoint = widget.places.first.location;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final compactOverlay = screenWidth < 640;
+    final mapHint = _createMode == _MapCreateMode.accident
+        ? loc.tr('tap_to_add_accident')
+        : _createMode == _MapCreateMode.place
+        ? loc.tr('tap_to_add_place')
+        : loc.tr('map_metric_hint');
     final topPlaces = [...widget.places]
       ..sort(
         (a, b) => UrbanScoreService.scoreByCriterion(
@@ -97,113 +104,158 @@ class _MapTabState extends State<MapTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.radar_rounded,
-                            color: AppTheme.accent,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  loc.tr('live_city_map'),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Text(
-                                  _createMode == _MapCreateMode.accident
-                                      ? loc.tr('tap_to_add_accident')
-                                      : _createMode == _MapCreateMode.place
-                                      ? loc.tr('tap_to_add_place')
-                                      : loc.tr('map_metric_hint'),
-                                  style: const TextStyle(
-                                    color: AppTheme.textMuted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                      if (compactOverlay)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.radar_rounded,
+                              color: AppTheme.accent,
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          SizedBox(
-                            width: 220,
-                            child: DropdownButton<ScoreCriterion>(
-                              isExpanded: true,
-                              dropdownColor: AppTheme.bgTertiary,
-                              value: _criterion,
-                              underline: const SizedBox.shrink(),
-                              items: ScoreCriterion.values
-                                  .map(
-                                    (criterion) => DropdownMenuItem(
-                                      value: criterion,
-                                      child: Text(
-                                        loc.criterionLabel(criterion),
-                                      ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    loc.tr('live_city_map'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
                                     ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                if (value == null) {
-                                  return;
-                                }
+                                  ),
+                                  Text(
+                                    mapHint,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppTheme.textMuted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.radar_rounded,
+                              color: AppTheme.accent,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    loc.tr('live_city_map'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    mapHint,
+                                    style: const TextStyle(
+                                      color: AppTheme.textMuted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            SizedBox(
+                              width: 220,
+                              child: DropdownButton<ScoreCriterion>(
+                                isExpanded: true,
+                                dropdownColor: AppTheme.bgTertiary,
+                                value: _criterion,
+                                underline: const SizedBox.shrink(),
+                                items: ScoreCriterion.values
+                                    .map(
+                                      (criterion) => DropdownMenuItem(
+                                        value: criterion,
+                                        child: Text(
+                                          loc.criterionLabel(criterion),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) {
+                                  if (value == null) {
+                                    return;
+                                  }
+                                  setState(() {
+                                    _criterion = value;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (compactOverlay) ...[
+                        const SizedBox(height: 8),
+                        DropdownButton<ScoreCriterion>(
+                          isExpanded: true,
+                          dropdownColor: AppTheme.bgTertiary,
+                          value: _criterion,
+                          underline: const SizedBox.shrink(),
+                          items: ScoreCriterion.values
+                              .map(
+                                (criterion) => DropdownMenuItem(
+                                  value: criterion,
+                                  child: Text(loc.criterionLabel(criterion)),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) {
+                              return;
+                            }
+                            setState(() {
+                              _criterion = value;
+                            });
+                          },
+                        ),
+                      ],
+                      if (_canCreateMapPoint) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _ModeButton(
+                              label: loc.tr('add_place'),
+                              icon: Icons.apartment_rounded,
+                              isActive: _createMode == _MapCreateMode.place,
+                              enabled: _canCreateMapPoint,
+                              onTap: () {
                                 setState(() {
-                                  _criterion = value;
+                                  _createMode =
+                                      _createMode == _MapCreateMode.place
+                                      ? _MapCreateMode.none
+                                      : _MapCreateMode.place;
                                 });
                               },
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _ModeButton(
-                            label: loc.tr('add_place'),
-                            isActive: _createMode == _MapCreateMode.place,
-                            icon: Icons.apartment_rounded,
-                            enabled: _canCreateMapPoint,
-                            onTap: () {
-                              setState(() {
-                                _createMode =
-                                    _createMode == _MapCreateMode.place
-                                    ? _MapCreateMode.none
-                                    : _MapCreateMode.place;
-                              });
-                            },
-                          ),
-                          _ModeButton(
-                            label: loc.tr('add_accident'),
-                            isActive: _createMode == _MapCreateMode.accident,
-                            icon: Icons.car_crash_rounded,
-                            enabled: _canCreateMapPoint,
-                            onTap: () {
-                              setState(() {
-                                _createMode =
-                                    _createMode == _MapCreateMode.accident
-                                    ? _MapCreateMode.none
-                                    : _MapCreateMode.accident;
-                              });
-                            },
-                          ),
-                          if (!_canCreateMapPoint)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4, top: 10),
-                              child: Text(
-                                loc.tr('map_point_builder_only'),
-                                style: const TextStyle(
-                                  color: AppTheme.textMuted,
-                                  fontSize: 12,
-                                ),
-                              ),
+                            _ModeButton(
+                              label: loc.tr('add_accident'),
+                              icon: Icons.car_crash_rounded,
+                              isActive: _createMode == _MapCreateMode.accident,
+                              enabled: _canCreateMapPoint,
+                              onTap: () {
+                                setState(() {
+                                  _createMode =
+                                      _createMode == _MapCreateMode.accident
+                                      ? _MapCreateMode.none
+                                      : _MapCreateMode.accident;
+                                });
+                              },
                             ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -218,7 +270,7 @@ class _MapTabState extends State<MapTab> {
               onPointerDown: (_) => _suppressNextMapTap(),
               child: PointerInterceptor(
                 child: SizedBox(
-                  height: 126,
+                  height: compactOverlay ? 120 : 126,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: topPlaces.take(4).length,
@@ -233,7 +285,7 @@ class _MapTabState extends State<MapTab> {
                         score.toDouble(),
                       );
                       return SizedBox(
-                        width: 228,
+                        width: compactOverlay ? 200 : 228,
                         child: GlassPanel(
                           borderRadius: 20,
                           padding: const EdgeInsets.all(12),
