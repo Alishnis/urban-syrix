@@ -11,6 +11,7 @@ class OpenAiPlaceAnalysisService {
   Future<PlaceAiAssessment> analyze({
     required String name,
     required UrbanPlaceType type,
+    IncidentSubtype? incidentSubtype,
     required String description,
     required String address,
   }) async {
@@ -46,6 +47,7 @@ class OpenAiPlaceAnalysisService {
                     'Analyze this place.\n'
                     'Name: $name\n'
                     'Type: ${type.label}\n'
+                    'Incident subtype: ${incidentSubtype?.label ?? 'n/a'}\n'
                     'Address: $address\n'
                     'Description: $description',
               },

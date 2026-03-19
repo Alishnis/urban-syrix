@@ -8,6 +8,7 @@ import 'package:hackathon_net/domain/services/urban_score_service.dart';
 import 'package:hackathon_net/features/auth/domain/app_role.dart';
 import 'package:hackathon_net/features/map/data/reverse_geocoding_service.dart';
 import 'package:hackathon_net/features/map/map_styles.dart';
+import 'package:hackathon_net/features/map/widgets/accident_report_sheet.dart';
 import 'package:hackathon_net/features/map/widgets/create_place_sheet.dart';
 import 'package:hackathon_net/features/map/widgets/place_details_sheet.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -42,6 +43,7 @@ class _MapTabState extends State<MapTab> {
   bool _isSheetOpen = false;
   LatLng? _draftMarkerTarget;
   DateTime? _ignoreMapTapUntil;
+  _MapCreateMode _createMode = _MapCreateMode.none;
 
   bool get _canCreateMapPoint =>
       widget.currentRole == AppRole.builder ||
@@ -92,55 +94,115 @@ class _MapTabState extends State<MapTab> {
                     horizontal: 16,
                     vertical: 10,
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.radar_rounded, color: AppTheme.accent),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              loc.tr('live_city_map'),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            Text(
-                              loc.tr('map_metric_hint'),
-                              style: const TextStyle(
-                                color: AppTheme.textMuted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        width: 220,
-                        child: DropdownButton<ScoreCriterion>(
-                          isExpanded: true,
-                          dropdownColor: AppTheme.bgTertiary,
-                          value: _criterion,
-                          underline: const SizedBox.shrink(),
-                          items: ScoreCriterion.values
-                              .map(
-                                (criterion) => DropdownMenuItem(
-                                  value: criterion,
-                                  child: Text(loc.criterionLabel(criterion)),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.radar_rounded,
+                            color: AppTheme.accent,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  loc.tr('live_city_map'),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value == null) {
-                              return;
-                            }
-                            setState(() {
-                              _criterion = value;
-                            });
-                          },
-                        ),
+                                Text(
+                                  _createMode == _MapCreateMode.accident
+                                      ? loc.tr('tap_to_add_accident')
+                                      : _createMode == _MapCreateMode.place
+                                      ? loc.tr('tap_to_add_place')
+                                      : loc.tr('map_metric_hint'),
+                                  style: const TextStyle(
+                                    color: AppTheme.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            width: 220,
+                            child: DropdownButton<ScoreCriterion>(
+                              isExpanded: true,
+                              dropdownColor: AppTheme.bgTertiary,
+                              value: _criterion,
+                              underline: const SizedBox.shrink(),
+                              items: ScoreCriterion.values
+                                  .map(
+                                    (criterion) => DropdownMenuItem(
+                                      value: criterion,
+                                      child: Text(
+                                        loc.criterionLabel(criterion),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                if (value == null) {
+                                  return;
+                                }
+                                setState(() {
+                                  _criterion = value;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _ModeButton(
+                            label: loc.tr('add_place'),
+                            isActive: _createMode == _MapCreateMode.place,
+                            icon: Icons.apartment_rounded,
+                            enabled: _canCreateMapPoint,
+                            onTap: () {
+                              setState(() {
+                                _createMode =
+                                    _createMode == _MapCreateMode.place
+                                    ? _MapCreateMode.none
+                                    : _MapCreateMode.place;
+                              });
+                            },
+                          ),
+                          _ModeButton(
+                            label: loc.tr('add_accident'),
+                            isActive: _createMode == _MapCreateMode.accident,
+                            icon: Icons.car_crash_rounded,
+                            enabled: _canCreateMapPoint,
+                            onTap: () {
+                              setState(() {
+                                _createMode =
+                                    _createMode == _MapCreateMode.accident
+                                    ? _MapCreateMode.none
+                                    : _MapCreateMode.accident;
+                              });
+                            },
+                          ),
+                          if (!_canCreateMapPoint)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4, top: 10),
+                              child: Text(
+                                loc.tr('map_point_builder_only'),
+                                style: const TextStyle(
+                                  color: AppTheme.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
@@ -262,10 +324,14 @@ class _MapTabState extends State<MapTab> {
       return Marker(
         markerId: MarkerId(place.id),
         position: LatLng(place.location.latitude, place.location.longitude),
-        icon: BitmapDescriptor.defaultMarkerWithHue(_markerHue(score)),
+        icon: BitmapDescriptor.defaultMarkerWithHue(_markerHue(place, score)),
         infoWindow: InfoWindow(
           title: place.name,
-          snippet: '${loc.placeTypeLabel(place.type)} | ${score.round()}',
+          snippet: place.type == UrbanPlaceType.incident
+              ? (place.incidentSubtype != null
+                    ? loc.incidentDetectionLabel(place.incidentSubtype!)
+                    : loc.tr('live_incident'))
+              : '${loc.placeTypeLabel(place.type)} | ${score.round()}',
         ),
         onTap: () => _openDetails(place),
       );
@@ -332,10 +398,24 @@ class _MapTabState extends State<MapTab> {
         );
       return;
     }
+    if (_createMode == _MapCreateMode.none) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).tr('pick_create_mode')),
+          ),
+        );
+      return;
+    }
     setState(() {
       _draftMarkerTarget = target;
     });
-    _openCreatePlaceSheet(target);
+    if (_createMode == _MapCreateMode.accident) {
+      _openAccidentSheet(target);
+    } else {
+      _openCreatePlaceSheet(target);
+    }
   }
 
   Future<void> _openCreatePlaceSheet(LatLng target) async {
@@ -358,6 +438,12 @@ class _MapTabState extends State<MapTab> {
           role: widget.currentRole,
           reverseGeocodingService: _reverseGeocodingService,
           onCreate: widget.onCreatePlace,
+          initialType: UrbanPlaceType.building,
+          allowedTypes: const [
+            UrbanPlaceType.building,
+            UrbanPlaceType.construction,
+            UrbanPlaceType.road,
+          ],
         ),
       ),
     );
@@ -369,11 +455,63 @@ class _MapTabState extends State<MapTab> {
     setState(() {
       _isSheetOpen = false;
       _draftMarkerTarget = null;
+      _createMode = _MapCreateMode.none;
     });
     _suppressNextMapTap();
   }
 
-  double _markerHue(double score) {
+  Future<void> _openAccidentSheet(LatLng target) async {
+    if (_isSheetOpen) {
+      return;
+    }
+    setState(() {
+      _isSheetOpen = true;
+      _draftMarkerTarget = target;
+    });
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.94,
+        child: AccidentReportSheet(
+          latitude: target.latitude,
+          longitude: target.longitude,
+          reverseGeocodingService: _reverseGeocodingService,
+          onCreate: widget.onCreatePlace,
+        ),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSheetOpen = false;
+      _draftMarkerTarget = null;
+      _createMode = _MapCreateMode.none;
+    });
+    _suppressNextMapTap();
+  }
+
+  double _markerHue(UrbanPlace place, double score) {
+    if (place.type == UrbanPlaceType.incident) {
+      return switch (place.incidentSubtype) {
+        IncidentSubtype.fire => BitmapDescriptor.hueRed,
+        IncidentSubtype.carAccident => BitmapDescriptor.hueRose,
+        IncidentSubtype.other || null => BitmapDescriptor.hueViolet,
+      };
+    }
+    if (place.type == UrbanPlaceType.building) {
+      return BitmapDescriptor.hueAzure;
+    }
+    if (place.type == UrbanPlaceType.construction) {
+      return BitmapDescriptor.hueOrange;
+    }
+    if (place.type == UrbanPlaceType.road) {
+      return BitmapDescriptor.hueGreen;
+    }
     if (score >= 75) {
       return BitmapDescriptor.hueGreen;
     }
@@ -397,5 +535,67 @@ class _MapTabState extends State<MapTab> {
       _ignoreMapTapUntil = null;
     }
     return shouldIgnore;
+  }
+}
+
+enum _MapCreateMode { none, place, accident }
+
+class _ModeButton extends StatelessWidget {
+  const _ModeButton({
+    required this.label,
+    required this.isActive,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isActive;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor = isActive
+        ? AppTheme.bgPrimary
+        : enabled
+        ? AppTheme.textPrimary
+        : AppTheme.textMuted;
+    return Opacity(
+      opacity: enabled ? 1 : 0.72,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: enabled ? onTap : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isActive
+                ? AppTheme.accent
+                : enabled
+                ? AppTheme.glassLight
+                : AppTheme.bgTertiary,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: enabled ? AppTheme.glassBorder : AppTheme.textMuted,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: foregroundColor),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: foregroundColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -3,6 +3,9 @@ create table if not exists public.urban_places (
   created_by uuid not null references auth.users (id) on delete cascade,
   name text not null,
   type text not null check (type in ('building', 'construction', 'road', 'incident')),
+  incident_subtype text,
+  detection_model text,
+  detection_preview_url text,
   address text not null,
   description text not null,
   latitude double precision not null,
@@ -17,6 +20,15 @@ create table if not exists public.urban_places (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.urban_places
+add column if not exists incident_subtype text;
+
+alter table public.urban_places
+add column if not exists detection_model text;
+
+alter table public.urban_places
+add column if not exists detection_preview_url text;
 
 alter table public.urban_places enable row level security;
 

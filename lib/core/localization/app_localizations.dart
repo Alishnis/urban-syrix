@@ -43,6 +43,36 @@ class AppLocalizations {
       AppLanguage.ru: 'Нажмите в любую точку карты, чтобы добавить метку.',
       AppLanguage.kk: 'Белгі қосу үшін картаның кез келген жерін басыңыз.',
     },
+    'tap_to_add_place': {
+      AppLanguage.en: 'Tap the map to add a building or infrastructure point.',
+      AppLanguage.ru:
+          'Нажмите на карту, чтобы добавить здание или инфраструктурную точку.',
+      AppLanguage.kk:
+          'Ғимарат немесе инфрақұрылым нүктесін қосу үшін картаны басыңыз.',
+    },
+    'tap_to_add_accident': {
+      AppLanguage.en:
+          'Tap the map to place an accident marker and open detection flow.',
+      AppLanguage.ru:
+          'Нажмите на карту, чтобы поставить аварийную метку и открыть detection flow.',
+      AppLanguage.kk:
+          'Апат белгісін қою және detection flow ашу үшін картаны басыңыз.',
+    },
+    'pick_create_mode': {
+      AppLanguage.en: 'Choose Add place or Add accident first.',
+      AppLanguage.ru: 'Сначала выберите Add place или Add accident.',
+      AppLanguage.kk: 'Алдымен Add place немесе Add accident таңдаңыз.',
+    },
+    'add_place': {
+      AppLanguage.en: 'Add place',
+      AppLanguage.ru: 'Добавить объект',
+      AppLanguage.kk: 'Нысан қосу',
+    },
+    'add_accident': {
+      AppLanguage.en: 'Add accident',
+      AppLanguage.ru: 'Добавить аварию',
+      AppLanguage.kk: 'Апат қосу',
+    },
     'cloud_syncing': {
       AppLanguage.en: 'Syncing map points with cloud storage...',
       AppLanguage.ru: 'Синхронизация точек карты с облаком...',
@@ -213,6 +243,145 @@ class AppLocalizations {
       AppLanguage.en: 'Incident',
       AppLanguage.ru: 'Инцидент',
       AppLanguage.kk: 'Оқиға',
+    },
+    'incident_fire': {
+      AppLanguage.en: 'Fire',
+      AppLanguage.ru: 'Пожар',
+      AppLanguage.kk: 'Өрт',
+    },
+    'incident_car_accident': {
+      AppLanguage.en: 'Car accident',
+      AppLanguage.ru: 'ДТП',
+      AppLanguage.kk: 'Жол апаты',
+    },
+    'incident_other': {
+      AppLanguage.en: 'Other',
+      AppLanguage.ru: 'Другое',
+      AppLanguage.kk: 'Басқа',
+    },
+    'incident_detection_title': {
+      AppLanguage.en: 'Incident analysis mode',
+      AppLanguage.ru: 'Режим анализа инцидента',
+      AppLanguage.kk: 'Инцидентті талдау режимі',
+    },
+    'incident_detection_subtitle': {
+      AppLanguage.en:
+          'Choose the flow ported from city.mgr: fire detection, car accident detection, or manual report.',
+      AppLanguage.ru:
+          'Выберите сценарий из city.mgr: детекция пожара, детекция ДТП или ручной отчёт.',
+      AppLanguage.kk:
+          'city.mgr жобасынан тасымалданған сценарийді таңдаңыз: өрт, жол апаты немесе қолмен есеп.',
+    },
+    'fire_model_desc': {
+      AppLanguage.en:
+          'Use the YOLOv8 fire workflow for fire-related incidents.',
+      AppLanguage.ru: 'Использует сценарий YOLOv8 для инцидентов с огнём.',
+      AppLanguage.kk:
+          'Өртке қатысты инциденттер үшін YOLOv8 сценарийі қолданылады.',
+    },
+    'car_accident_model_desc': {
+      AppLanguage.en:
+          'Use the YOLOv8 traffic accident workflow for crash events.',
+      AppLanguage.ru:
+          'Использует сценарий YOLOv8 для дорожно-транспортных происшествий.',
+      AppLanguage.kk: 'Жол-көлік оқиғалары үшін YOLOv8 сценарийі қолданылады.',
+    },
+    'other_model_desc': {
+      AppLanguage.en:
+          'Create a manual incident report without AI detection media.',
+      AppLanguage.ru: 'Создаёт ручной отчёт об инциденте без медиа-детекции.',
+      AppLanguage.kk: 'AI-медиа анықтаусыз қолмен инцидент есебін жасайды.',
+    },
+    'upload_media': {
+      AppLanguage.en: 'Upload image or video',
+      AppLanguage.ru: 'Загрузить фото или видео',
+      AppLanguage.kk: 'Фото немесе видео жүктеу',
+    },
+    'sensitivity': {
+      AppLanguage.en: 'Sensitivity',
+      AppLanguage.ru: 'Чувствительность',
+      AppLanguage.kk: 'Сезімталдық',
+    },
+    'analyze_media': {
+      AppLanguage.en: 'Analyze media',
+      AppLanguage.ru: 'Анализировать медиа',
+      AppLanguage.kk: 'Медианы талдау',
+    },
+    'analyzing': {
+      AppLanguage.en: 'Analyzing...',
+      AppLanguage.ru: 'Анализ...',
+      AppLanguage.kk: 'Талдау...',
+    },
+    'detection_found': {
+      AppLanguage.en: 'Detection found:',
+      AppLanguage.ru: 'Обнаружение найдено:',
+      AppLanguage.kk: 'Анықтау табылды:',
+    },
+    'detection_not_found': {
+      AppLanguage.en: 'No incident detected in the uploaded media.',
+      AppLanguage.ru: 'В загруженном медиа инцидент не найден.',
+      AppLanguage.kk: 'Жүктелген медиадан инцидент табылмады.',
+    },
+    'incident_summary': {
+      AppLanguage.en: 'Incident summary',
+      AppLanguage.ru: 'Сводка инцидента',
+      AppLanguage.kk: 'Инцидент жиынтығы',
+    },
+    'detected_event': {
+      AppLanguage.en: 'Detected event',
+      AppLanguage.ru: 'Обнаруженное событие',
+      AppLanguage.kk: 'Анықталған оқиға',
+    },
+    'detection_model': {
+      AppLanguage.en: 'Detection model',
+      AppLanguage.ru: 'Модель детекции',
+      AppLanguage.kk: 'Анықтау моделі',
+    },
+    'detection_preview': {
+      AppLanguage.en: 'Detected area in media',
+      AppLanguage.ru: 'Где обнаружено на медиа',
+      AppLanguage.kk: 'Медиада қай жерде анықталды',
+    },
+    'preview_unavailable': {
+      AppLanguage.en: 'Detection preview is unavailable.',
+      AppLanguage.ru: 'Превью детекции недоступно.',
+      AppLanguage.kk: 'Детекция превьюі қолжетімсіз.',
+    },
+    'incident_description_only': {
+      AppLanguage.en:
+          'Incidents are shown as live alerts and do not use urban score breakdown.',
+      AppLanguage.ru:
+          'Инциденты показываются как live alerts и не используют разбивку городского score.',
+      AppLanguage.kk:
+          'Инциденттер live alert ретінде көрсетіледі және қалалық score бөлінісін қолданбайды.',
+    },
+    'live_incident': {
+      AppLanguage.en: 'Live incident',
+      AppLanguage.ru: 'Живой инцидент',
+      AppLanguage.kk: 'Тікелей инцидент',
+    },
+    'detected_fire': {
+      AppLanguage.en: 'Detected fire',
+      AppLanguage.ru: 'Обнаружен пожар',
+      AppLanguage.kk: 'Өрт анықталды',
+    },
+    'detected_car_accident': {
+      AppLanguage.en: 'Detected car accident',
+      AppLanguage.ru: 'Обнаружено ДТП',
+      AppLanguage.kk: 'Жол апаты анықталды',
+    },
+    'manual_incident': {
+      AppLanguage.en: 'Manual incident report',
+      AppLanguage.ru: 'Ручной отчёт об инциденте',
+      AppLanguage.kk: 'Қолмен енгізілген инцидент',
+    },
+    'analyze_before_saving': {
+      AppLanguage.en:
+          'Run detection and make sure an incident is found before saving.',
+      AppLanguage.ru:
+          'Перед сохранением выполните анализ и убедитесь, что инцидент найден.',
+      AppLanguage.kk:
+          'Сақтамас бұрын талдауды орындап, инцидент табылғанына көз жеткізіңіз.',
     },
     'overall_score': {
       AppLanguage.en: 'Overall score',
@@ -458,6 +627,18 @@ class AppLocalizations {
     UrbanPlaceType.construction => tr('construction'),
     UrbanPlaceType.road => tr('road'),
     UrbanPlaceType.incident => tr('incident'),
+  };
+
+  String incidentSubtypeLabel(IncidentSubtype subtype) => switch (subtype) {
+    IncidentSubtype.fire => tr('incident_fire'),
+    IncidentSubtype.carAccident => tr('incident_car_accident'),
+    IncidentSubtype.other => tr('incident_other'),
+  };
+
+  String incidentDetectionLabel(IncidentSubtype subtype) => switch (subtype) {
+    IncidentSubtype.fire => tr('detected_fire'),
+    IncidentSubtype.carAccident => tr('detected_car_accident'),
+    IncidentSubtype.other => tr('manual_incident'),
   };
 
   String categoryLabel(UrbanCategory category) => switch (category) {

@@ -78,6 +78,36 @@ enum UrbanPlaceType {
   }
 }
 
+enum IncidentSubtype {
+  fire(
+    'fire',
+    'Fire',
+    Icons.local_fire_department_rounded,
+    'YOLOv8 Fire Detection',
+  ),
+  carAccident(
+    'car_accident',
+    'Car accident',
+    Icons.car_crash_rounded,
+    'YOLOv8 Traffic Accident Detection',
+  ),
+  other('other', 'Other', Icons.edit_note_rounded, 'Manual Incident Report');
+
+  const IncidentSubtype(this.key, this.label, this.icon, this.modelLabel);
+
+  final String key;
+  final String label;
+  final IconData icon;
+  final String modelLabel;
+
+  static IncidentSubtype fromKey(String? key) {
+    return IncidentSubtype.values.firstWhere(
+      (type) => type.key == key,
+      orElse: () => IncidentSubtype.other,
+    );
+  }
+}
+
 class GeoPoint {
   const GeoPoint({required this.latitude, required this.longitude});
 
@@ -124,6 +154,9 @@ class UrbanPlace {
     required this.id,
     required this.name,
     required this.type,
+    this.incidentSubtype,
+    this.detectionModel,
+    this.detectionPreviewUrl,
     required this.address,
     required this.description,
     required this.location,
@@ -139,6 +172,9 @@ class UrbanPlace {
   final String id;
   final String name;
   final UrbanPlaceType type;
+  final IncidentSubtype? incidentSubtype;
+  final String? detectionModel;
+  final String? detectionPreviewUrl;
   final String address;
   final String description;
   final GeoPoint location;
@@ -154,6 +190,9 @@ class UrbanPlace {
     String? id,
     String? name,
     UrbanPlaceType? type,
+    IncidentSubtype? incidentSubtype,
+    String? detectionModel,
+    String? detectionPreviewUrl,
     String? address,
     String? description,
     GeoPoint? location,
@@ -169,6 +208,9 @@ class UrbanPlace {
       id: id ?? this.id,
       name: name ?? this.name,
       type: type ?? this.type,
+      incidentSubtype: incidentSubtype ?? this.incidentSubtype,
+      detectionModel: detectionModel ?? this.detectionModel,
+      detectionPreviewUrl: detectionPreviewUrl ?? this.detectionPreviewUrl,
       address: address ?? this.address,
       description: description ?? this.description,
       location: location ?? this.location,

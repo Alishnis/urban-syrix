@@ -18,6 +18,8 @@ class CreatePlaceSheet extends StatefulWidget {
     required this.role,
     required this.reverseGeocodingService,
     required this.onCreate,
+    this.initialType,
+    this.allowedTypes,
   });
 
   final double latitude;
@@ -25,6 +27,8 @@ class CreatePlaceSheet extends StatefulWidget {
   final AppRole role;
   final ReverseGeocodingService reverseGeocodingService;
   final Future<void> Function(UrbanPlace place) onCreate;
+  final UrbanPlaceType? initialType;
+  final List<UrbanPlaceType>? allowedTypes;
 
   @override
   State<CreatePlaceSheet> createState() => _CreatePlaceSheetState();
@@ -39,6 +43,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   final _addressController = TextEditingController();
 
   UrbanPlaceType _selectedType = UrbanPlaceType.incident;
+  IncidentSubtype _incidentSubtype = IncidentSubtype.other;
   bool _isResolvingAddress = true;
   bool _isSaving = false;
   String? _addressError;
@@ -48,6 +53,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedType = widget.initialType ?? UrbanPlaceType.incident;
     _resolveAddress();
   }
 
@@ -156,6 +162,17 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
                           });
                         },
                       ),
+                      if (_selectedType == UrbanPlaceType.incident) ...[
+                        const SizedBox(height: 16),
+                        _IncidentSubtypeSection(
+                          selectedSubtype: _incidentSubtype,
+                          onChanged: (value) {
+                            setState(() {
+                              _incidentSubtype = value;
+                            });
+                          },
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
@@ -335,10 +352,17 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       address: address,
     );
 
+    final incidentSubtype = _selectedType == UrbanPlaceType.incident
+        ? _incidentSubtype
+        : null;
+    final detectionModel = incidentSubtype?.modelLabel;
+
     final place = UrbanPlace(
       id: 'user_${DateTime.now().microsecondsSinceEpoch}',
       name: name,
       type: _selectedType,
+      incidentSubtype: incidentSubtype,
+      detectionModel: detectionModel,
       address: address,
       description: assessment.description,
       location: GeoPoint(
@@ -388,6 +412,9 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       return await _openAiPlaceAnalysisService.analyze(
         name: name,
         type: _selectedType,
+        incidentSubtype: _selectedType == UrbanPlaceType.incident
+            ? _incidentSubtype
+            : null,
         description: description,
         address: address,
       );
@@ -404,14 +431,17 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   PlaceAiAssessment _fallbackAssessment(String description) {
     return PlaceAiAssessment(
       description: description,
-      baseScores: _baseScoresFor(_selectedType),
-      trafficRisk: _trafficRiskFor(_selectedType),
-      co2Footprint: _co2FootprintFor(_selectedType),
-      greenCoverage: _greenCoverageFor(_selectedType),
+      baseScores: _baseScoresFor(_selectedType, _incidentSubtype),
+      trafficRisk: _trafficRiskFor(_selectedType, _incidentSubtype),
+      co2Footprint: _co2FootprintFor(_selectedType, _incidentSubtype),
+      greenCoverage: _greenCoverageFor(_selectedType, _incidentSubtype),
     );
   }
 
-  Map<UrbanCategory, double> _baseScoresFor(UrbanPlaceType type) {
+  Map<UrbanCategory, double> _baseScoresFor(
+    UrbanPlaceType type,
+    IncidentSubtype incidentSubtype,
+  ) {
     switch (type) {
       case UrbanPlaceType.building:
         return const {
@@ -441,13 +471,31 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
           UrbanCategory.safety: 55,
         };
       case UrbanPlaceType.incident:
-        return const {
-          UrbanCategory.mobility: 44,
-          UrbanCategory.environment: 50,
-          UrbanCategory.resources: 55,
-          UrbanCategory.transparency: 52,
-          UrbanCategory.inclusivity: 49,
-          UrbanCategory.safety: 35,
+        return switch (incidentSubtype) {
+          IncidentSubtype.fire => const {
+            UrbanCategory.mobility: 31,
+            UrbanCategory.environment: 22,
+            UrbanCategory.resources: 38,
+            UrbanCategory.transparency: 47,
+            UrbanCategory.inclusivity: 34,
+            UrbanCategory.safety: 18,
+          },
+          IncidentSubtype.carAccident => const {
+            UrbanCategory.mobility: 27,
+            UrbanCategory.environment: 42,
+            UrbanCategory.resources: 49,
+            UrbanCategory.transparency: 45,
+            UrbanCategory.inclusivity: 37,
+            UrbanCategory.safety: 24,
+          },
+          IncidentSubtype.other => const {
+            UrbanCategory.mobility: 44,
+            UrbanCategory.environment: 50,
+            UrbanCategory.resources: 55,
+            UrbanCategory.transparency: 52,
+            UrbanCategory.inclusivity: 49,
+            UrbanCategory.safety: 35,
+          },
         };
     }
   }
@@ -482,18 +530,36 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
           ),
         ];
       case UrbanPlaceType.incident:
-        return const [
-          UrbanIssue(
-            title: 'Incident requires urgent municipal follow-up',
-            category: UrbanCategory.safety,
-            daysOpen: 1,
-            severity: 4,
-          ),
-        ];
+        return switch (_incidentSubtype) {
+          IncidentSubtype.fire => const [
+            UrbanIssue(
+              title: 'Fire response requires urgent emergency follow-up',
+              category: UrbanCategory.safety,
+              daysOpen: 1,
+              severity: 5,
+            ),
+          ],
+          IncidentSubtype.carAccident => const [
+            UrbanIssue(
+              title: 'Traffic accident requires immediate road safety response',
+              category: UrbanCategory.mobility,
+              daysOpen: 1,
+              severity: 4,
+            ),
+          ],
+          IncidentSubtype.other => const [
+            UrbanIssue(
+              title: 'Incident requires urgent municipal follow-up',
+              category: UrbanCategory.safety,
+              daysOpen: 1,
+              severity: 4,
+            ),
+          ],
+        };
     }
   }
 
-  int _trafficRiskFor(UrbanPlaceType type) {
+  int _trafficRiskFor(UrbanPlaceType type, IncidentSubtype incidentSubtype) {
     switch (type) {
       case UrbanPlaceType.building:
         return 26;
@@ -502,11 +568,15 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       case UrbanPlaceType.road:
         return 34;
       case UrbanPlaceType.incident:
-        return 38;
+        return switch (incidentSubtype) {
+          IncidentSubtype.fire => 62,
+          IncidentSubtype.carAccident => 71,
+          IncidentSubtype.other => 38,
+        };
     }
   }
 
-  int _co2FootprintFor(UrbanPlaceType type) {
+  int _co2FootprintFor(UrbanPlaceType type, IncidentSubtype incidentSubtype) {
     switch (type) {
       case UrbanPlaceType.building:
         return 52;
@@ -515,11 +585,15 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       case UrbanPlaceType.road:
         return 48;
       case UrbanPlaceType.incident:
-        return 40;
+        return switch (incidentSubtype) {
+          IncidentSubtype.fire => 78,
+          IncidentSubtype.carAccident => 46,
+          IncidentSubtype.other => 40,
+        };
     }
   }
 
-  int _greenCoverageFor(UrbanPlaceType type) {
+  int _greenCoverageFor(UrbanPlaceType type, IncidentSubtype incidentSubtype) {
     switch (type) {
       case UrbanPlaceType.building:
         return 56;
@@ -528,7 +602,11 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
       case UrbanPlaceType.road:
         return 41;
       case UrbanPlaceType.incident:
-        return 24;
+        return switch (incidentSubtype) {
+          IncidentSubtype.fire => 12,
+          IncidentSubtype.carAccident => 20,
+          IncidentSubtype.other => 24,
+        };
     }
   }
 
@@ -538,6 +616,10 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   bool get _canCreateMapPoint => _canCreateConstruction;
 
   List<UrbanPlaceType> get _allowedTypes {
+    final explicitAllowedTypes = widget.allowedTypes;
+    if (explicitAllowedTypes != null) {
+      return explicitAllowedTypes;
+    }
     if (_canCreateConstruction) {
       return UrbanPlaceType.values;
     }
@@ -574,6 +656,113 @@ class _CategoryPreview extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _IncidentSubtypeSection extends StatelessWidget {
+  const _IncidentSubtypeSection({
+    required this.selectedSubtype,
+    required this.onChanged,
+  });
+
+  final IncidentSubtype selectedSubtype;
+  final ValueChanged<IncidentSubtype> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          loc.tr('incident_detection_title'),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          loc.tr('incident_detection_subtitle'),
+          style: const TextStyle(
+            color: AppTheme.textSecondary,
+            height: 1.5,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (final subtype in IncidentSubtype.values) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => onChanged(subtype),
+              child: GlassPanel(
+                borderRadius: 20,
+                padding: const EdgeInsets.all(14),
+                blur: false,
+                backgroundColor: selectedSubtype == subtype
+                    ? const Color(0xFF1E3140)
+                    : const Color(0xFF101729),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: AppTheme.accent.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(subtype.icon, color: AppTheme.accent),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            loc.incidentSubtypeLabel(subtype),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtype.modelLabel,
+                            style: const TextStyle(
+                              color: AppTheme.accent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            switch (subtype) {
+                              IncidentSubtype.fire => loc.tr('fire_model_desc'),
+                              IncidentSubtype.carAccident => loc.tr(
+                                'car_accident_model_desc',
+                              ),
+                              IncidentSubtype.other => loc.tr(
+                                'other_model_desc',
+                              ),
+                            },
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (selectedSubtype == subtype)
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: AppTheme.accent,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -47,6 +47,10 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final isIncident = _place.type == UrbanPlaceType.incident;
+    final showMetaChips =
+        !isIncident &&
+        (_place.incidentSubtype != null || _place.detectionModel != null);
     final total = UrbanScoreService.overallScore(_place).round();
     final breakdown = UrbanScoreService.breakdown(_place);
 
@@ -85,14 +89,42 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                           ),
                         ),
                       ),
-                      Text(
-                        '$total/100',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: UrbanScoreService.scoreColor(total.toDouble()),
+                      if (isIncident)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.danger.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppTheme.danger.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Text(
+                            _place.incidentSubtype != null
+                                ? loc.incidentDetectionLabel(
+                                    _place.incidentSubtype!,
+                                  )
+                                : loc.tr('live_incident'),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.danger,
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
+                          '$total/100',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: UrbanScoreService.scoreColor(
+                              total.toDouble(),
+                            ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -100,6 +132,30 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                     '${loc.placeTypeLabel(_place.type)} | ${_place.address}',
                     style: const TextStyle(color: AppTheme.textSecondary),
                   ),
+                  if (showMetaChips) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (_place.incidentSubtype != null)
+                          Chip(
+                            avatar: Icon(
+                              _place.incidentSubtype!.icon,
+                              size: 18,
+                            ),
+                            label: Text(
+                              loc.incidentSubtypeLabel(_place.incidentSubtype!),
+                            ),
+                          ),
+                        if (_place.detectionModel != null)
+                          Chip(
+                            avatar: const Icon(Icons.memory_rounded, size: 18),
+                            label: Text(_place.detectionModel!),
+                          ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Text(
                     _place.description,
@@ -109,38 +165,111 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  SectionEyebrow(label: loc.tr('score_breakdown')),
-                  const SizedBox(height: 10),
-                  for (final category in UrbanCategory.values) ...[
-                    _CategoryRow(
-                      category: category,
-                      value: (breakdown[category] ?? 0).round(),
-                    ),
+                  if (isIncident) ...[
+                    SectionEyebrow(label: loc.tr('incident_summary')),
                     const SizedBox(height: 10),
-                  ],
-                  const SizedBox(height: 14),
-                  SectionEyebrow(label: loc.tr('open_issues')),
-                  const SizedBox(height: 8),
-                  if (_place.issues.isEmpty)
-                    Text(loc.tr('no_open_issues'))
-                  else
-                    for (final issue in _place.issues)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: GlassPanel(
-                          borderRadius: 18,
-                          padding: const EdgeInsets.all(14),
-                          child: ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.error_outline_rounded),
-                            title: Text(issue.title),
-                            subtitle: Text(
-                              '${loc.categoryLabel(issue.category)} | ${issue.daysOpen} ${loc.tr('days_open')}',
+                    GlassPanel(
+                      borderRadius: 20,
+                      padding: const EdgeInsets.all(16),
+                      blur: false,
+                      backgroundColor: const Color(0xFF161D29),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _IncidentMetaRow(
+                            label: loc.tr('detected_event'),
+                            value: _place.incidentSubtype != null
+                                ? loc.incidentDetectionLabel(
+                                    _place.incidentSubtype!,
+                                  )
+                                : loc.tr('live_incident'),
+                            icon:
+                                _place.incidentSubtype?.icon ??
+                                Icons.warning_amber_rounded,
+                          ),
+                          if (_place.detectionModel != null) ...[
+                            const SizedBox(height: 12),
+                            _IncidentMetaRow(
+                              label: loc.tr('detection_model'),
+                              value: _place.detectionModel!,
+                              icon: Icons.memory_rounded,
+                            ),
+                          ],
+                          if (_place.detectionPreviewUrl != null) ...[
+                            const SizedBox(height: 14),
+                            Text(
+                              loc.tr('detection_preview'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                _place.detectionPreviewUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.bgTertiary,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    loc.tr('preview_unavailable'),
+                                    style: const TextStyle(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          Text(
+                            loc.tr('incident_description_only'),
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    SectionEyebrow(label: loc.tr('score_breakdown')),
+                    const SizedBox(height: 10),
+                    for (final category in UrbanCategory.values) ...[
+                      _CategoryRow(
+                        category: category,
+                        value: (breakdown[category] ?? 0).round(),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    const SizedBox(height: 14),
+                    SectionEyebrow(label: loc.tr('open_issues')),
+                    const SizedBox(height: 8),
+                    if (_place.issues.isEmpty)
+                      Text(loc.tr('no_open_issues'))
+                    else
+                      for (final issue in _place.issues)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: GlassPanel(
+                            borderRadius: 18,
+                            padding: const EdgeInsets.all(14),
+                            child: ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.error_outline_rounded),
+                              title: Text(issue.title),
+                              subtitle: Text(
+                                '${loc.categoryLabel(issue.category)} | ${issue.daysOpen} ${loc.tr('days_open')}',
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                  ],
                   const SizedBox(height: 14),
                   SectionEyebrow(label: loc.tr('citizen_comments')),
                   const SizedBox(height: 12),
@@ -317,6 +446,56 @@ class _CategoryRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           valueColor: AlwaysStoppedAnimation(category.color),
           backgroundColor: AppTheme.glassMedium,
+        ),
+      ],
+    );
+  }
+}
+
+class _IncidentMetaRow extends StatelessWidget {
+  const _IncidentMetaRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppTheme.glassLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

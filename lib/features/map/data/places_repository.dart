@@ -26,7 +26,7 @@ class SupabasePlacesRepository implements PlacesRepository {
     final response = await _client
         .from('urban_places')
         .select(
-          'id, name, type, address, description, latitude, longitude, developer, '
+          'id, name, type, incident_subtype, detection_model, detection_preview_url, address, description, latitude, longitude, developer, '
           'traffic_risk, co2_footprint, green_coverage, base_scores, issues',
         )
         .order('created_at', ascending: false);
@@ -72,6 +72,9 @@ class SupabasePlacesRepository implements PlacesRepository {
           'created_by': user.id,
           'name': place.name,
           'type': place.type.key,
+          'incident_subtype': place.incidentSubtype?.key,
+          'detection_model': place.detectionModel,
+          'detection_preview_url': place.detectionPreviewUrl,
           'address': place.address,
           'description': place.description,
           'latitude': place.location.latitude,
@@ -84,7 +87,7 @@ class SupabasePlacesRepository implements PlacesRepository {
           'issues': place.issues.map(_serializeIssue).toList(growable: false),
         })
         .select(
-          'id, name, type, address, description, latitude, longitude, developer, '
+          'id, name, type, incident_subtype, detection_model, detection_preview_url, address, description, latitude, longitude, developer, '
           'traffic_risk, co2_footprint, green_coverage, base_scores, issues',
         )
         .single();
@@ -157,6 +160,9 @@ class SupabasePlacesRepository implements PlacesRepository {
       'created_by': userId,
       'name': place.name,
       'type': place.type.key,
+      'incident_subtype': place.incidentSubtype?.key,
+      'detection_model': place.detectionModel,
+      'detection_preview_url': place.detectionPreviewUrl,
       'address': place.address,
       'description': place.description,
       'latitude': place.location.latitude,
@@ -175,6 +181,11 @@ class SupabasePlacesRepository implements PlacesRepository {
       id: map['id'] as String,
       name: map['name'] as String? ?? '',
       type: UrbanPlaceType.fromKey(map['type'] as String?),
+      incidentSubtype: map['incident_subtype'] == null
+          ? null
+          : IncidentSubtype.fromKey(map['incident_subtype'] as String?),
+      detectionModel: map['detection_model'] as String?,
+      detectionPreviewUrl: map['detection_preview_url'] as String?,
       address: map['address'] as String? ?? '',
       description: map['description'] as String? ?? '',
       location: GeoPoint(
