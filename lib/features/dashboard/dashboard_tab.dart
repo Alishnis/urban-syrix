@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon_net/core/theme/app_theme.dart';
+import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
 import 'package:hackathon_net/domain/services/urban_score_service.dart';
 
@@ -20,8 +22,29 @@ class DashboardTab extends StatelessWidget {
       );
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
       children: [
+        const SectionEyebrow(label: 'City operations'),
+        const SizedBox(height: 14),
+        const Text(
+          'Municipal signals in a structural glass control layer.',
+          style: TextStyle(
+            fontSize: 34,
+            height: 1.05,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1.3,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'A real-time overview of score health, maintenance pressure and high-priority places across the city.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 16,
+            height: 1.6,
+          ),
+        ),
+        const SizedBox(height: 22),
         _HeroStats(
           cityScore: cityScore,
           placesCount: places.length,
@@ -32,26 +55,45 @@ class DashboardTab extends StatelessWidget {
           avgFixDays: avgFixDays,
         ),
         const SizedBox(height: 16),
-        const Text(
-          'AI alerts',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-        ),
+        const SectionEyebrow(label: 'Active alerts'),
         const SizedBox(height: 10),
         for (final alert in alerts)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(alert),
+            child: GlassPanel(
+              borderRadius: 20,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_active_outlined,
+                      color: AppTheme.accent,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      alert,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         const SizedBox(height: 12),
-        const Text(
-          'Top places by UrbanScore',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-        ),
+        const SectionEyebrow(label: 'Top places by UrbanScore'),
         const SizedBox(height: 10),
         for (final place in sorted.take(5))
           Padding(
@@ -79,12 +121,22 @@ class _HeroStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppTheme.glassBorder),
         gradient: const LinearGradient(
-          colors: [Color(0xFF1C3F37), Color(0xFF2D6A5D), Color(0xFF88A96B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF101827), Color(0xFF0E1625), Color(0xFF132B31)],
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: AppTheme.accentGlow,
+            blurRadius: 40,
+            spreadRadius: -10,
+          ),
+        ],
       ),
       child: Wrap(
         runSpacing: 12,
@@ -112,7 +164,8 @@ class _StatItem extends StatelessWidget {
       width: 155,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
+        color: Colors.white.withValues(alpha: 0.05),
+        border: Border.all(color: AppTheme.glassBorder),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -120,7 +173,7 @@ class _StatItem extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 6),
           Text(
@@ -147,18 +200,40 @@ class _PlaceScoreTile extends StatelessWidget {
     final score = UrbanScoreService.overallScore(place);
     final color = UrbanScoreService.scoreColor(score);
 
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.18),
-          child: Icon(place.type.icon, color: color),
-        ),
-        title: Text(place.name),
-        subtitle: Text('${place.type.label} | ${place.address}'),
-        trailing: Text(
-          score.round().toString(),
-          style: TextStyle(fontWeight: FontWeight.w800, color: color),
-        ),
+    return GlassPanel(
+      borderRadius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.18),
+            child: Icon(place.type.icon, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  place.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${place.type.label} | ${place.address}',
+                  style: const TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            score.round().toString(),
+            style: TextStyle(fontWeight: FontWeight.w800, color: color),
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hackathon_net/core/theme/app_theme.dart';
+import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/features/auth/presentation/auth_scope.dart';
 
 class AccountTab extends StatelessWidget {
@@ -11,33 +13,33 @@ class AccountTab extends StatelessWidget {
     final profile = auth.profile;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
       children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF143B34), Color(0xFF2E6B5F)],
-            ),
-          ),
+        const SectionEyebrow(label: 'Profile'),
+        const SizedBox(height: 14),
+        GlassPanel(
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Account',
+                'Authenticated operator profile.',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 34,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1.2,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 user?.email ?? 'Unknown email',
-                style: const TextStyle(color: Colors.white70, fontSize: 16),
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 17,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Chip(
                 label: Text(profile?.role.label ?? 'Resident'),
                 avatar: const Icon(Icons.badge_outlined, size: 18),
@@ -46,7 +48,7 @@ class AccountTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Card(
+        GlassPanel(
           child: ListTile(
             leading: const Icon(Icons.verified_user_outlined),
             title: const Text('Authenticated with Supabase'),
@@ -57,7 +59,7 @@ class AccountTab extends StatelessWidget {
         ),
         if (profile?.role.label == 'Administrator') ...[
           const SizedBox(height: 16),
-          const Card(
+          const GlassPanel(
             child: ListTile(
               leading: Icon(Icons.admin_panel_settings_outlined),
               title: Text('Administrator access enabled'),
@@ -69,7 +71,7 @@ class AccountTab extends StatelessWidget {
         ],
         if (profile?.role.label == 'Builder') ...[
           const SizedBox(height: 16),
-          const Card(
+          const GlassPanel(
             child: ListTile(
               leading: Icon(Icons.construction_outlined),
               title: Text('Builder workspace'),
@@ -81,7 +83,7 @@ class AccountTab extends StatelessWidget {
         ],
         if (profile?.role.label == 'Resident') ...[
           const SizedBox(height: 16),
-          const Card(
+          const GlassPanel(
             child: ListTile(
               leading: Icon(Icons.home_outlined),
               title: Text('Resident workspace'),
