@@ -1,16 +1,52 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hackathon_net/app.dart';
+import 'package:hackathon_net/features/auth/data/auth_repository.dart';
+import 'package:hackathon_net/features/auth/domain/app_role.dart';
+import 'package:hackathon_net/features/auth/domain/user_profile.dart';
+import 'package:hackathon_net/features/auth/presentation/auth_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
-  testWidgets('Dashboard tab renders and map tab is available', (
+  testWidgets('Shows supabase setup when auth is not configured', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const UrbanScoreApp());
+    final repository = _FakeAuthRepository();
+    final controller = AuthController(repository);
+
+    await tester.pumpWidget(UrbanScoreApp(authController: controller));
     await tester.pumpAndSettle();
 
-    expect(find.text('Dashboard'), findsOneWidget);
-    expect(find.text('Map'), findsOneWidget);
-    expect(find.text('UrbanScore Dashboard'), findsOneWidget);
-    expect(find.text('AI alerts'), findsOneWidget);
+    expect(find.text('Supabase is not configured'), findsOneWidget);
+    expect(find.textContaining('Run the app with SUPABASE_URL'), findsOneWidget);
   });
+}
+
+class _FakeAuthRepository implements AuthRepository {
+  @override
+  Stream<AuthState> get authStateChanges => const Stream.empty();
+
+  @override
+  User? get currentUser => null;
+
+  @override
+  Future<void> signIn({required String email, required String password}) async {}
+
+  @override
+  Future<void> signOut() async {}
+
+  @override
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required AppRole role,
+  }) async {}
+
+  @override
+  Future<UserProfile?> fetchProfile() async => null;
+
+  @override
+  Future<void> ensureProfile({
+    required User user,
+    required AppRole role,
+  }) async {}
 }
