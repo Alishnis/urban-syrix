@@ -53,10 +53,18 @@ class _MapTabState extends State<MapTab> {
   SafeRouteResult? _safeRoute;
   String? _routeError;
   bool _isBuildingRoute = false;
+  bool _areToolsExpanded = false;
 
-  bool get _canCreateMapPoint =>
+  bool get _canCreatePlace =>
       widget.currentRole == AppRole.builder ||
       widget.currentRole == AppRole.admin;
+
+  bool get _canCreateAccident =>
+      widget.currentRole == AppRole.resident ||
+      widget.currentRole == AppRole.builder ||
+      widget.currentRole == AppRole.admin;
+
+  bool get _canCreateAnyPoint => _canCreatePlace || _canCreateAccident;
 
   @override
   Widget build(BuildContext context) {
@@ -203,111 +211,191 @@ class _MapTabState extends State<MapTab> {
                         ),
                       ],
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _ModeButton(
-                            label: loc.tr('set_start'),
-                            isActive:
-                                _routeSelectMode == _RouteSelectMode.start,
-                            icon: Icons.trip_origin_rounded,
-                            enabled: true,
-                            onTap: () {
-                              setState(() {
-                                _createMode = _MapCreateMode.none;
-                                _routeSelectMode =
-                                    _routeSelectMode == _RouteSelectMode.start
-                                    ? _RouteSelectMode.none
-                                    : _RouteSelectMode.start;
-                              });
-                            },
-                          ),
-                          _ModeButton(
-                            label: loc.tr('set_destination'),
-                            isActive:
-                                _routeSelectMode ==
-                                _RouteSelectMode.destination,
-                            icon: Icons.flag_rounded,
-                            enabled: true,
-                            onTap: () {
-                              setState(() {
-                                _createMode = _MapCreateMode.none;
-                                _routeSelectMode =
-                                    _routeSelectMode ==
-                                        _RouteSelectMode.destination
-                                    ? _RouteSelectMode.none
-                                    : _RouteSelectMode.destination;
-                              });
-                            },
-                          ),
-                          _ModeButton(
-                            label: _isBuildingRoute
-                                ? loc.tr('building_route')
-                                : loc.tr('build_safe_route'),
-                            isActive: _safeRoute != null,
-                            icon: Icons.alt_route_rounded,
-                            enabled:
-                                !_isBuildingRoute &&
-                                _routeStart != null &&
-                                _routeEnd != null,
-                            onTap: _buildSafeRoute,
-                          ),
-                          _ModeButton(
-                            label: loc.tr('clear_route'),
-                            isActive: false,
-                            icon: Icons.layers_clear_rounded,
-                            enabled:
-                                _routeStart != null ||
-                                _routeEnd != null ||
-                                _safeRoute != null,
-                            onTap: _clearRoute,
-                          ),
-                          if (_canCreateMapPoint)
-                            _ModeButton(
-                              label: loc.tr('add_place'),
-                              isActive: _createMode == _MapCreateMode.place,
-                              icon: Icons.apartment_rounded,
-                              enabled: _canCreateMapPoint,
-                              onTap: () {
-                                setState(() {
-                                  _routeSelectMode = _RouteSelectMode.none;
-                                  _createMode =
-                                      _createMode == _MapCreateMode.place
-                                      ? _MapCreateMode.none
-                                      : _MapCreateMode.place;
-                                });
-                              },
-                            ),
-                          if (_canCreateMapPoint)
-                            _ModeButton(
-                              label: loc.tr('add_accident'),
-                              isActive: _createMode == _MapCreateMode.accident,
-                              icon: Icons.car_crash_rounded,
-                              enabled: _canCreateMapPoint,
-                              onTap: () {
-                                setState(() {
-                                  _routeSelectMode = _RouteSelectMode.none;
-                                  _createMode =
-                                      _createMode == _MapCreateMode.accident
-                                      ? _MapCreateMode.none
-                                      : _MapCreateMode.accident;
-                                });
-                              },
-                            ),
-                          if (!_canCreateMapPoint)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4, top: 10),
+                      if (compactOverlay)
+                        Row(
+                          children: [
+                            Expanded(
                               child: Text(
-                                loc.tr('map_point_builder_only'),
+                                _routeSelectMode == _RouteSelectMode.start
+                                    ? loc.tr('tap_to_set_start')
+                                    : _routeSelectMode ==
+                                          _RouteSelectMode.destination
+                                    ? loc.tr('tap_to_set_destination')
+                                    : _createMode == _MapCreateMode.accident
+                                    ? loc.tr('tap_to_add_accident')
+                                    : _createMode == _MapCreateMode.place
+                                    ? loc.tr('tap_to_add_place')
+                                    : loc.tr('map_metric_hint'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  color: AppTheme.textMuted,
+                                  color: AppTheme.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
                             ),
-                        ],
-                      ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(999),
+                              onTap: () {
+                                setState(() {
+                                  _areToolsExpanded = !_areToolsExpanded;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.glassLight,
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: AppTheme.glassBorder,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.tune_rounded,
+                                      size: 16,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      loc.tr('add_point'),
+                                      style: const TextStyle(
+                                        color: AppTheme.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      _areToolsExpanded
+                                          ? Icons.expand_less_rounded
+                                          : Icons.expand_more_rounded,
+                                      size: 16,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (!compactOverlay || _areToolsExpanded) ...[
+                        if (compactOverlay) const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _ModeButton(
+                              label: loc.tr('set_start'),
+                              isActive:
+                                  _routeSelectMode == _RouteSelectMode.start,
+                              icon: Icons.trip_origin_rounded,
+                              enabled: true,
+                              onTap: () {
+                                setState(() {
+                                  _createMode = _MapCreateMode.none;
+                                  _routeSelectMode =
+                                      _routeSelectMode == _RouteSelectMode.start
+                                      ? _RouteSelectMode.none
+                                      : _RouteSelectMode.start;
+                                });
+                              },
+                            ),
+                            _ModeButton(
+                              label: loc.tr('set_destination'),
+                              isActive:
+                                  _routeSelectMode ==
+                                  _RouteSelectMode.destination,
+                              icon: Icons.flag_rounded,
+                              enabled: true,
+                              onTap: () {
+                                setState(() {
+                                  _createMode = _MapCreateMode.none;
+                                  _routeSelectMode =
+                                      _routeSelectMode ==
+                                          _RouteSelectMode.destination
+                                      ? _RouteSelectMode.none
+                                      : _RouteSelectMode.destination;
+                                });
+                              },
+                            ),
+                            _ModeButton(
+                              label: _isBuildingRoute
+                                  ? loc.tr('building_route')
+                                  : loc.tr('build_safe_route'),
+                              isActive: _safeRoute != null,
+                              icon: Icons.alt_route_rounded,
+                              enabled:
+                                  !_isBuildingRoute &&
+                                  _routeStart != null &&
+                                  _routeEnd != null,
+                              onTap: _buildSafeRoute,
+                            ),
+                            _ModeButton(
+                              label: loc.tr('clear_route'),
+                              isActive: false,
+                              icon: Icons.layers_clear_rounded,
+                              enabled:
+                                  _routeStart != null ||
+                                  _routeEnd != null ||
+                                  _safeRoute != null,
+                              onTap: _clearRoute,
+                            ),
+                            if (_canCreatePlace)
+                              _ModeButton(
+                                label: loc.tr('add_place'),
+                                isActive: _createMode == _MapCreateMode.place,
+                                icon: Icons.apartment_rounded,
+                                enabled: _canCreatePlace,
+                                onTap: () {
+                                  setState(() {
+                                    _routeSelectMode = _RouteSelectMode.none;
+                                    _createMode =
+                                        _createMode == _MapCreateMode.place
+                                        ? _MapCreateMode.none
+                                        : _MapCreateMode.place;
+                                  });
+                                },
+                              ),
+                            if (_canCreateAccident)
+                              _ModeButton(
+                                label: loc.tr('add_accident'),
+                                isActive:
+                                    _createMode == _MapCreateMode.accident,
+                                icon: Icons.car_crash_rounded,
+                                enabled: _canCreateAccident,
+                                onTap: () {
+                                  setState(() {
+                                    _routeSelectMode = _RouteSelectMode.none;
+                                    _createMode =
+                                        _createMode == _MapCreateMode.accident
+                                        ? _MapCreateMode.none
+                                        : _MapCreateMode.accident;
+                                  });
+                                },
+                              ),
+                            if (!_canCreateAnyPoint)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 4,
+                                  top: 10,
+                                ),
+                                child: Text(
+                                  loc.tr('map_point_builder_only'),
+                                  style: const TextStyle(
+                                    color: AppTheme.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                       if (_routeError != null) ...[
                         const SizedBox(height: 10),
                         Text(
@@ -560,7 +648,7 @@ class _MapTabState extends State<MapTab> {
       });
       return;
     }
-    if (!_canCreateMapPoint) {
+    if (!_canCreateAnyPoint) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -586,8 +674,23 @@ class _MapTabState extends State<MapTab> {
       _draftMarkerTarget = target;
     });
     if (_createMode == _MapCreateMode.accident) {
+      if (!_canCreateAccident) {
+        return;
+      }
       _openAccidentSheet(target);
     } else {
+      if (!_canCreatePlace) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context).tr('map_point_builder_only'),
+              ),
+            ),
+          );
+        return;
+      }
       _openCreatePlaceSheet(target);
     }
   }
