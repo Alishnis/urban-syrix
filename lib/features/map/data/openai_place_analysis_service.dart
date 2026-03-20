@@ -34,7 +34,12 @@ class OpenAiPlaceAnalysisService {
                     'Assess the location using these criteria: mobility, environment, resources, transparency, inclusivity, safety. '
                     'Every score must be an integer from 0 to 100. '
                     'Rewrite the description into one polished sentence in English for a product demo. '
-                    'Be realistic for the place type and avoid hype.',
+                    'Be realistic for the place type and avoid hype. '
+                    'Use the textual evidence directly. '
+                    'If the description explicitly mentions strong transit access, safe pedestrian access, bike parking, drop-off zones, or barrier-free circulation, mobility should usually be high (75-95). '
+                    'If the description explicitly mentions energy efficiency, water-saving systems, recycling, waste sorting, or efficient building systems, resources should usually be high (75-95). '
+                    'If the description explicitly mentions accessibility for disabled people, step-free entrances, tactile navigation, wide aisles, inclusive design, accessible counters, or use by people of different ages and abilities, inclusivity should usually be high (75-95). '
+                    'Do not default those categories to medium when the description gives direct evidence.',
               },
             ],
           },

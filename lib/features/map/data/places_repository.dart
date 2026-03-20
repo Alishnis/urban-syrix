@@ -63,7 +63,7 @@ class SupabasePlacesRepository implements PlacesRepository {
   @override
   Future<UrbanPlace> createPlace(UrbanPlace place) async {
     final user = _requireUser();
-    await _ensureBuilderAccess(user.id);
+    await _ensureCreateAccess(user.id, place.type);
 
     final response = await _client
         .from('urban_places')
@@ -226,7 +226,7 @@ class SupabasePlacesRepository implements PlacesRepository {
     return email.split('@').first;
   }
 
-  Future<void> _ensureBuilderAccess(String userId) async {
+  Future<void> _ensureCreateAccess(String userId, UrbanPlaceType type) async {
     final profile = await _client
         .from('profiles')
         .select('role')
@@ -234,6 +234,14 @@ class SupabasePlacesRepository implements PlacesRepository {
         .maybeSingle();
 
     final role = profile == null ? null : profile['role'] as String?;
+    if (type == UrbanPlaceType.incident) {
+      if (role == 'resident' || role == 'builder' || role == 'admin') {
+        return;
+      }
+      throw const AuthException(
+        'Only resident, builder, or admin accounts can create accident points.',
+      );
+    }
     if (role != 'builder' && role != 'admin') {
       throw const AuthException(
         'Only builder or admin accounts can create map points.',
