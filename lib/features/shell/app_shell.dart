@@ -46,6 +46,7 @@ class _AppShellState extends State<AppShell> {
     final languageController = LanguageScope.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final compactHeader = screenWidth < 860;
+    final ultraCompactHeader = screenWidth < 560;
     final titles = [
       'urban syrix ${loc.tr('dashboard')}',
       'urban syrix ${loc.tr('map')}',
@@ -81,12 +82,25 @@ class _AppShellState extends State<AppShell> {
                           children: [
                             Row(
                               children: [
-                                const Expanded(child: _BrandRow()),
+                                const Expanded(child: _BrandRow(compact: true)),
                                 _LanguagePicker(
                                   languageController: languageController,
                                 ),
                               ],
                             ),
+                            if (!ultraCompactHeader) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                titles[_selectedIndex],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ],
                           ],
                         )
                       : Row(
@@ -296,33 +310,38 @@ class _AppShellState extends State<AppShell> {
 }
 
 class _BrandRow extends StatelessWidget {
-  const _BrandRow();
+  const _BrandRow({this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         Flexible(
           child: Text(
             'urban',
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontSize: compact ? 20 : 24,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
-        SizedBox(width: 6),
+        SizedBox(width: compact ? 4 : 6),
         Flexible(
           child: Text(
             'syrix',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: compact ? 20 : 24,
               fontWeight: FontWeight.w800,
               color: AppTheme.accent,
             ),
           ),
         ),
-        SizedBox(width: 12),
-        _LiveDot(),
+        SizedBox(width: compact ? 8 : 12),
+        const _LiveDot(),
       ],
     );
   }
