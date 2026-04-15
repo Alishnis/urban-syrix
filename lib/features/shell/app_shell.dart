@@ -13,6 +13,8 @@ import 'package:hackathon_net/features/auth/presentation/auth_scope.dart';
 import 'package:hackathon_net/features/dashboard/dashboard_tab.dart';
 import 'package:hackathon_net/features/map/data/places_repository.dart';
 import 'package:hackathon_net/features/map/map_tab.dart';
+import 'package:hackathon_net/features/reviews/data/swipe_reviews_repository.dart';
+import 'package:hackathon_net/features/reviews/swipe_reviews_tab.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppShell extends StatefulWidget {
@@ -25,6 +27,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   late final List<UrbanPlace> _places;
   late final PlacesRepository _placesRepository;
+  late final SwipeReviewsRepository _swipeReviewsRepository;
   int _selectedIndex = 0;
   bool _isSyncingPlaces = false;
   String? _placesError;
@@ -35,6 +38,9 @@ class _AppShellState extends State<AppShell> {
     _placesRepository = SupabaseConfig.isConfigured
         ? SupabasePlacesRepository(Supabase.instance.client)
         : UnconfiguredPlacesRepository();
+    _swipeReviewsRepository = SupabaseConfig.isConfigured
+        ? SupabaseSwipeReviewsRepository(Supabase.instance.client)
+        : UnconfiguredSwipeReviewsRepository();
     _places = [...MockUrbanRepository().getPlaces()];
     _loadPersistedPlaces();
   }
@@ -50,6 +56,7 @@ class _AppShellState extends State<AppShell> {
     final titles = [
       'urban syrix ${loc.tr('dashboard')}',
       'urban syrix ${loc.tr('map')}',
+      'urban syrix ${loc.tr('swipe_reviews')}',
       'urban syrix ${loc.tr('account')}',
     ];
     final pages = [
@@ -60,7 +67,8 @@ class _AppShellState extends State<AppShell> {
         onCreatePlace: _addPlace,
         onAddReview: _addReview,
       ),
-      const AccountTab(),
+      SwipeReviewsTab(repository: _swipeReviewsRepository, seedPlaces: _places),
+      AccountTab(repository: _swipeReviewsRepository),
     ];
 
     return Scaffold(
@@ -198,6 +206,10 @@ class _AppShellState extends State<AppShell> {
               NavigationDestination(
                 icon: const Icon(Icons.map_rounded),
                 label: loc.tr('map'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.swipe_rounded),
+                label: loc.tr('swipe_reviews'),
               ),
               NavigationDestination(
                 icon: const Icon(Icons.person_outline_rounded),

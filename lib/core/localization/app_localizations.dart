@@ -28,6 +28,194 @@ class AppLocalizations {
       AppLanguage.ru: 'Аккаунт',
       AppLanguage.kk: 'Аккаунт',
     },
+    'swipe_reviews': {
+      AppLanguage.en: 'Swipe reviews',
+      AppLanguage.ru: 'Свайп-отзывы',
+      AppLanguage.kk: 'Свайп-пікірлер',
+    },
+    'swipe_reviews_title': {
+      AppLanguage.en: 'Rate organizations with a swipe.',
+      AppLanguage.ru: 'Оценивайте организации свайпом.',
+      AppLanguage.kk: 'Ұйымдарды свайп арқылы бағалаңыз.',
+    },
+    'swipe_reviews_body': {
+      AppLanguage.en:
+          'Swipe right if you like the organization and left if you do not. Every swipe opens a review form for detailed feedback.',
+      AppLanguage.ru:
+          'Свайп вправо, если организация вам понравилась, и влево, если нет. После каждого свайпа открывается форма отзыва.',
+      AppLanguage.kk:
+          'Ұйым ұнаса оңға, ұнамаса солға свайп жасаңыз. Әр свайптан кейін пікір формасы ашылады.',
+    },
+    'swipe_left': {
+      AppLanguage.en: 'Swipe left',
+      AppLanguage.ru: 'Свайп влево',
+      AppLanguage.kk: 'Солға свайп',
+    },
+    'swipe_right': {
+      AppLanguage.en: 'Swipe right',
+      AppLanguage.ru: 'Свайп вправо',
+      AppLanguage.kk: 'Оңға свайп',
+    },
+    'remaining_places': {
+      AppLanguage.en: 'Places left',
+      AppLanguage.ru: 'Осталось мест',
+      AppLanguage.kk: 'Қалған орындар',
+    },
+    'swipe_done_title': {
+      AppLanguage.en: 'Deck completed',
+      AppLanguage.ru: 'Карточки закончились',
+      AppLanguage.kk: 'Карточкалар аяқталды',
+    },
+    'swipe_done_subtitle': {
+      AppLanguage.en: 'You have reviewed every available organization.',
+      AppLanguage.ru: 'Вы уже оценили все доступные организации.',
+      AppLanguage.kk: 'Қолжетімді ұйымдардың барлығын бағаладыңыз.',
+    },
+    'reload_deck': {
+      AppLanguage.en: 'Reload deck',
+      AppLanguage.ru: 'Обновить карточки',
+      AppLanguage.kk: 'Карточкаларды жаңарту',
+    },
+    'retry': {
+      AppLanguage.en: 'Retry',
+      AppLanguage.ru: 'Повторить',
+      AppLanguage.kk: 'Қайта көру',
+    },
+    'swipe_load_failed': {
+      AppLanguage.en: 'Failed to load swipe deck.',
+      AppLanguage.ru: 'Не удалось загрузить карточки.',
+      AppLanguage.kk: 'Свайп карточкаларын жүктеу сәтсіз.',
+    },
+    'review_dialog_like_title': {
+      AppLanguage.en: 'You swiped right - share your positive experience',
+      AppLanguage.ru: 'Вы свайпнули вправо - поделитесь положительным опытом',
+      AppLanguage.kk: 'Оңға свайп жасадыңыз - оң тәжірибеңізбен бөлісіңіз',
+    },
+    'review_dialog_dislike_title': {
+      AppLanguage.en: 'You swiped left - share what should improve',
+      AppLanguage.ru: 'Вы свайпнули влево - расскажите, что нужно улучшить',
+      AppLanguage.kk: 'Солға свайп жасадыңыз - не жақсарту керегін жазыңыз',
+    },
+    'experience_summary': {
+      AppLanguage.en: 'Experience summary',
+      AppLanguage.ru: 'Краткое резюме опыта',
+      AppLanguage.kk: 'Тәжірибе қысқаша мазмұны',
+    },
+    'experience_details': {
+      AppLanguage.en: 'Detailed feedback',
+      AppLanguage.ru: 'Подробный отзыв',
+      AppLanguage.kk: 'Толық пікір',
+    },
+    'summary_validation': {
+      AppLanguage.en: 'Summary must be at least 8 characters.',
+      AppLanguage.ru: 'Краткое описание должно быть не короче 8 символов.',
+      AppLanguage.kk: 'Қысқаша сипаттама кемінде 8 таңба болуы керек.',
+    },
+    'details_validation': {
+      AppLanguage.en: 'Details must be at least 16 characters.',
+      AppLanguage.ru: 'Подробности должны быть не короче 16 символов.',
+      AppLanguage.kk: 'Толық пікір кемінде 16 таңба болуы керек.',
+    },
+    'rating': {
+      AppLanguage.en: 'Rating',
+      AppLanguage.ru: 'Оценка',
+      AppLanguage.kk: 'Баға',
+    },
+    'attach_media': {
+      AppLanguage.en: 'Attach images/videos',
+      AppLanguage.ru: 'Прикрепить фото/видео',
+      AppLanguage.kk: 'Фото/видео тіркеу',
+    },
+    'submit_review': {
+      AppLanguage.en: 'Submit review',
+      AppLanguage.ru: 'Отправить отзыв',
+      AppLanguage.kk: 'Пікір жіберу',
+    },
+    'review_submitted_admin': {
+      AppLanguage.en: 'Review submitted for administrator moderation.',
+      AppLanguage.ru: 'Отзыв отправлен на модерацию администратору.',
+      AppLanguage.kk: 'Пікір әкімші модерациясына жіберілді.',
+    },
+    'review_submit_failed': {
+      AppLanguage.en: 'Failed to submit review.',
+      AppLanguage.ru: 'Не удалось отправить отзыв.',
+      AppLanguage.kk: 'Пікірді жіберу сәтсіз.',
+    },
+    'reward_progress': {
+      AppLanguage.en: 'Reward progress',
+      AppLanguage.ru: 'Прогресс награды',
+      AppLanguage.kk: 'Сыйлық прогресі',
+    },
+    'approved_reviews': {
+      AppLanguage.en: 'Approved reviews',
+      AppLanguage.ru: 'Одобренные отзывы',
+      AppLanguage.kk: 'Мақұлданған пікірлер',
+    },
+    'current_milestone': {
+      AppLanguage.en: 'Milestone',
+      AppLanguage.ru: 'Этап',
+      AppLanguage.kk: 'Кезең',
+    },
+    'next_reward_at': {
+      AppLanguage.en: 'Next gift card at',
+      AppLanguage.ru: 'Следующая подарочная карта на',
+      AppLanguage.kk: 'Келесі сыйлық картасы',
+    },
+    'reviews_left': {
+      AppLanguage.en: 'Reviews left',
+      AppLanguage.ru: 'Осталось отзывов',
+      AppLanguage.kk: 'Қалған пікір',
+    },
+    'moderation_queue': {
+      AppLanguage.en: 'Moderation queue',
+      AppLanguage.ru: 'Очередь модерации',
+      AppLanguage.kk: 'Модерация кезегі',
+    },
+    'moderation_load_failed': {
+      AppLanguage.en: 'Failed to load moderation queue.',
+      AppLanguage.ru: 'Не удалось загрузить очередь модерации.',
+      AppLanguage.kk: 'Модерация кезегін жүктеу сәтсіз.',
+    },
+    'moderation_queue_empty': {
+      AppLanguage.en: 'No pending reviews',
+      AppLanguage.ru: 'Нет отзывов в ожидании',
+      AppLanguage.kk: 'Күтіп тұрған пікір жоқ',
+    },
+    'moderation_queue_empty_body': {
+      AppLanguage.en: 'All pending reviews are already processed.',
+      AppLanguage.ru: 'Все отзывы из очереди уже обработаны.',
+      AppLanguage.kk: 'Кезектегі барлық пікір өңделді.',
+    },
+    'approve': {
+      AppLanguage.en: 'Approve',
+      AppLanguage.ru: 'Одобрить',
+      AppLanguage.kk: 'Мақұлдау',
+    },
+    'reject': {
+      AppLanguage.en: 'Reject',
+      AppLanguage.ru: 'Отклонить',
+      AppLanguage.kk: 'Қабылдамау',
+    },
+    'moderation_reason': {
+      AppLanguage.en: 'Moderation reason',
+      AppLanguage.ru: 'Причина модерации',
+      AppLanguage.kk: 'Модерация себебі',
+    },
+    'save': {
+      AppLanguage.en: 'Save',
+      AppLanguage.ru: 'Сохранить',
+      AppLanguage.kk: 'Сақтау',
+    },
+    'close': {
+      AppLanguage.en: 'Close',
+      AppLanguage.ru: 'Закрыть',
+      AppLanguage.kk: 'Жабу',
+    },
+    'attached_media': {
+      AppLanguage.en: 'Attached media',
+      AppLanguage.ru: 'Прикреплённое медиа',
+      AppLanguage.kk: 'Тіркелген медиа',
+    },
     'structural_glass_mode': {
       AppLanguage.en: 'STRUCTURAL GLASS MODE',
       AppLanguage.ru: 'РЕЖИМ STRUCTURAL GLASS',

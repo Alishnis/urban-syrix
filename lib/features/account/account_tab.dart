@@ -3,9 +3,13 @@ import 'package:hackathon_net/core/localization/app_localizations.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/features/auth/presentation/auth_scope.dart';
+import 'package:hackathon_net/features/reviews/admin_moderation_panel.dart';
+import 'package:hackathon_net/features/reviews/data/swipe_reviews_repository.dart';
 
 class AccountTab extends StatelessWidget {
-  const AccountTab({super.key});
+  const AccountTab({super.key, required this.repository});
+
+  final SwipeReviewsRepository repository;
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +73,10 @@ class AccountTab extends StatelessWidget {
               subtitle: Text(loc.tr('admin_access_body')),
             ),
           ),
+          const SizedBox(height: 16),
+          SectionEyebrow(label: loc.tr('moderation_queue')),
+          const SizedBox(height: 10),
+          AdminModerationPanel(repository: repository),
         ],
         if (roleKey == 'builder') ...[
           const SizedBox(height: 16),
