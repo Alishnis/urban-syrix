@@ -155,6 +155,7 @@ class UrbanPlace {
     required this.name,
     required this.type,
     this.incidentSubtype,
+    this.photoUrl,
     this.detectionModel,
     this.detectionPreviewUrl,
     required this.address,
@@ -173,6 +174,7 @@ class UrbanPlace {
   final String name;
   final UrbanPlaceType type;
   final IncidentSubtype? incidentSubtype;
+  final String? photoUrl;
   final String? detectionModel;
   final String? detectionPreviewUrl;
   final String address;
@@ -191,6 +193,7 @@ class UrbanPlace {
     String? name,
     UrbanPlaceType? type,
     IncidentSubtype? incidentSubtype,
+    String? photoUrl,
     String? detectionModel,
     String? detectionPreviewUrl,
     String? address,
@@ -209,6 +212,7 @@ class UrbanPlace {
       name: name ?? this.name,
       type: type ?? this.type,
       incidentSubtype: incidentSubtype ?? this.incidentSubtype,
+      photoUrl: photoUrl ?? this.photoUrl,
       detectionModel: detectionModel ?? this.detectionModel,
       detectionPreviewUrl: detectionPreviewUrl ?? this.detectionPreviewUrl,
       address: address ?? this.address,

@@ -66,6 +66,12 @@ alter table public.swipe_reviews enable row level security;
 alter table public.reward_ledger enable row level security;
 alter table public.organization_reputation enable row level security;
 
+grant usage on schema public to authenticated;
+grant select, insert on public.review_swipes to authenticated;
+grant select, insert on public.swipe_reviews to authenticated;
+grant select on public.reward_ledger to authenticated;
+grant select on public.organization_reputation to authenticated;
+
 drop policy if exists "Users can insert their swipes" on public.review_swipes;
 create policy "Users can insert their swipes"
 on public.review_swipes
@@ -89,6 +95,14 @@ create policy "Users can read own and published reviews"
 on public.swipe_reviews
 for select to authenticated
 using (auth.uid() = user_id or public_visible = true);
+
+drop policy if exists "Admins can read all swipe reviews" on public.swipe_reviews;
+create policy "Admins can read all swipe reviews"
+on public.swipe_reviews
+for select to authenticated
+using (exists (
+  select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'
+));
 
 drop policy if exists "Admins can update moderation status" on public.swipe_reviews;
 create policy "Admins can update moderation status"

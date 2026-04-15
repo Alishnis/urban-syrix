@@ -157,6 +157,27 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                     ),
                   ],
                   const SizedBox(height: 8),
+                  if (_place.photoUrl != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Image.network(
+                          _place.photoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            color: AppTheme.bgTertiary,
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.image_not_supported_outlined,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                   Text(
                     _place.description,
                     style: const TextStyle(

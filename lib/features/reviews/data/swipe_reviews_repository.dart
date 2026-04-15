@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -89,7 +87,7 @@ class SupabaseSwipeReviewsRepository implements SwipeReviewsRepository {
     final response = await _client
         .from('urban_places')
         .select(
-          'id, name, type, incident_subtype, detection_model, detection_preview_url, address, description, latitude, longitude, developer, '
+          'id, name, type, incident_subtype, photo_url, detection_model, detection_preview_url, address, description, latitude, longitude, developer, '
           'traffic_risk, co2_footprint, green_coverage, base_scores, issues',
         )
         .neq('type', 'incident')
@@ -206,11 +204,12 @@ class SupabaseSwipeReviewsRepository implements SwipeReviewsRepository {
 
     final approvedReviews = response.length;
     final milestone = approvedReviews ~/ 1000;
-    final remaining = 1000 - (approvedReviews % 1000);
+    final remainder = approvedReviews % 1000;
+    final remaining = remainder == 0 ? 1000 : 1000 - remainder;
     return RewardProgress(
       approvedReviews: approvedReviews,
       currentMilestone: milestone,
-      reviewsUntilNextMilestone: remaining == 1000 ? 0 : remaining,
+      reviewsUntilNextMilestone: remaining,
     );
   }
 
@@ -253,6 +252,7 @@ class SupabaseSwipeReviewsRepository implements SwipeReviewsRepository {
       incidentSubtype: map['incident_subtype'] == null
           ? null
           : IncidentSubtype.fromKey(map['incident_subtype'] as String?),
+      photoUrl: map['photo_url'] as String?,
       detectionModel: map['detection_model'] as String?,
       detectionPreviewUrl: map['detection_preview_url'] as String?,
       address: map['address'] as String? ?? '',

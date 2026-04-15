@@ -4,6 +4,7 @@ create table if not exists public.urban_places (
   name text not null,
   type text not null check (type in ('building', 'construction', 'road', 'incident')),
   incident_subtype text,
+  photo_url text,
   detection_model text,
   detection_preview_url text,
   address text not null,
@@ -23,6 +24,9 @@ create table if not exists public.urban_places (
 
 alter table public.urban_places
 add column if not exists incident_subtype text;
+
+alter table public.urban_places
+add column if not exists photo_url text;
 
 alter table public.urban_places
 add column if not exists detection_model text;

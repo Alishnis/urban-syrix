@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hackathon_net/core/localization/app_localizations.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
+import 'package:hackathon_net/features/map/data/place_photo_service.dart';
 import 'package:hackathon_net/features/reviews/data/swipe_reviews_repository.dart';
 
 class SwipeReviewsTab extends StatefulWidget {
@@ -25,8 +28,10 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
   int _index = 0;
   bool _loading = true;
   bool _sending = false;
+  bool _swipeAnimating = false;
   String? _error;
   RewardProgress? _rewardProgress;
+  Offset _dragOffset = Offset.zero;
 
   @override
   void initState() {
@@ -92,26 +97,94 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
             style: const TextStyle(color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 10),
-          _SwipePlaceCard(place: current),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _sending ? null : () => _startReviewFlow(SwipeDirection.left),
-                  icon: const Icon(Icons.close_rounded),
-                  label: Text(loc.tr('swipe_left')),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: _sending ? null : () => _startReviewFlow(SwipeDirection.right),
-                  icon: const Icon(Icons.favorite_rounded),
-                  label: Text(loc.tr('swipe_right')),
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final threshold = math.max(110.0, width * 0.22);
+              final swipeFraction = (_dragOffset.dx / threshold).clamp(-1.4, 1.4);
+              final leftActive = swipeFraction < -0.35;
+              final rightActive = swipeFraction > 0.35;
+
+              return Column(
+                children: [
+                  SizedBox(
+                    height: 470,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _SwipeCue(
+                                icon: Icons.close_rounded,
+                                label: loc.tr('swipe_left'),
+                                alignment: Alignment.centerLeft,
+                                active: leftActive,
+                                color: AppTheme.danger,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _SwipeCue(
+                                icon: Icons.favorite_rounded,
+                                label: loc.tr('swipe_right'),
+                                alignment: Alignment.centerRight,
+                                active: rightActive,
+                                color: AppTheme.accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                        GestureDetector(
+                          onPanUpdate: _sending || _swipeAnimating
+                              ? null
+                              : (details) {
+                                  setState(() {
+                                    _dragOffset += Offset(details.delta.dx, 0);
+                                  });
+                                },
+                          onPanEnd: _sending || _swipeAnimating
+                              ? null
+                              : (_) => _handleSwipeRelease(
+                                  threshold: threshold,
+                                  width: width,
+                                ),
+                          onPanCancel: _sending || _swipeAnimating
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _dragOffset = Offset.zero;
+                                  });
+                                },
+                          child: AnimatedContainer(
+                            duration: Duration(
+                              milliseconds: _swipeAnimating ? 180 : 220,
+                            ),
+                            curve: Curves.easeOutCubic,
+                            transform: Matrix4.identity()
+                              ..translate(_dragOffset.dx, 0.0)
+                              ..rotateZ((_dragOffset.dx / width) * 0.08),
+                            child: SizedBox(
+                              width: width,
+                              child: _SwipePlaceCard(
+                                place: current,
+                                swipeFraction: swipeFraction.toDouble(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Drag the card left or right with your mouse to submit a swipe.',
+                    style: TextStyle(color: AppTheme.textMuted),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ],
@@ -122,10 +195,16 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
     setState(() {
       _loading = true;
       _error = null;
+      _dragOffset = Offset.zero;
     });
     try {
       final fetched = await widget.repository.fetchSwipeCandidates();
-      final reward = await widget.repository.fetchRewardProgress();
+      RewardProgress? reward = _rewardProgress;
+      try {
+        reward = await widget.repository.fetchRewardProgress();
+      } catch (_) {
+        // Keep the deck usable even if reward progress is temporarily unavailable.
+      }
       if (!mounted) {
         return;
       }
@@ -150,9 +229,9 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
     }
   }
 
-  Future<void> _startReviewFlow(SwipeDirection direction) async {
+  Future<bool> _startReviewFlow(SwipeDirection direction) async {
     if (_index >= _deck.length) {
-      return;
+      return false;
     }
     final place = _deck[_index];
     final payload = await showDialog<_DialogReviewSubmission>(
@@ -160,7 +239,7 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
       builder: (_) => _ReviewSubmissionDialog(place: place, direction: direction),
     );
     if (payload == null) {
-      return;
+      return false;
     }
 
     setState(() {
@@ -180,7 +259,7 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
       );
       final reward = await widget.repository.fetchRewardProgress();
       if (!mounted) {
-        return;
+        return false;
       }
       setState(() {
         _rewardProgress = reward;
@@ -191,9 +270,10 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
         ..showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context).tr('review_submitted_admin'))),
         );
+      return true;
     } catch (error) {
       if (!mounted) {
-        return;
+        return false;
       }
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -204,6 +284,7 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
             ),
           ),
         );
+      return false;
     } finally {
       if (mounted) {
         setState(() {
@@ -212,44 +293,343 @@ class _SwipeReviewsTabState extends State<SwipeReviewsTab> {
       }
     }
   }
+
+  Future<void> _handleSwipeRelease({
+    required double threshold,
+    required double width,
+  }) async {
+    if (_dragOffset.dx.abs() < threshold) {
+      setState(() {
+        _dragOffset = Offset.zero;
+      });
+      return;
+    }
+
+    final direction = _dragOffset.dx >= 0
+        ? SwipeDirection.right
+        : SwipeDirection.left;
+    final exitX = direction == SwipeDirection.right ? width * 1.25 : -width * 1.25;
+
+    setState(() {
+      _swipeAnimating = true;
+      _dragOffset = Offset(exitX, 0);
+    });
+
+    await Future<void>.delayed(const Duration(milliseconds: 190));
+    if (!mounted) {
+      return;
+    }
+
+    final submitted = await _startReviewFlow(direction);
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _swipeAnimating = false;
+      _dragOffset = Offset.zero;
+      if (submitted && _index >= _deck.length) {
+        _dragOffset = Offset.zero;
+      }
+    });
+  }
 }
 
 class _SwipePlaceCard extends StatelessWidget {
-  const _SwipePlaceCard({required this.place});
+  const _SwipePlaceCard({
+    required this.place,
+    required this.swipeFraction,
+  });
 
   final UrbanPlace place;
+  final double swipeFraction;
 
   @override
   Widget build(BuildContext context) {
+    final tintColor = swipeFraction >= 0
+        ? AppTheme.accent
+        : AppTheme.danger;
+    final overlayOpacity = swipeFraction.abs().clamp(0.0, 1.0) * 0.18;
+
     return GlassPanel(
       borderRadius: 24,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Stack(
             children: [
-              CircleAvatar(
-                backgroundColor: AppTheme.accent.withValues(alpha: 0.2),
-                child: Icon(place.type.icon, color: AppTheme.accent),
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                child: SizedBox(
+                  height: 240,
+                  width: double.infinity,
+                  child: _PlaceCardImage(place: place),
+                ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  place.name,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withValues(alpha: 0.06),
+                        Colors.black.withValues(alpha: 0.54),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                ),
+              ),
+              if (overlayOpacity > 0)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: tintColor.withValues(alpha: overlayOpacity),
+                    ),
+                  ),
+                ),
+              Positioned(
+                left: 18,
+                right: 18,
+                bottom: 18,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppTheme.accent.withValues(alpha: 0.22),
+                      child: Icon(place.type.icon, color: Colors.white),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        place.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 24,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(place.address, style: const TextStyle(color: AppTheme.textSecondary)),
-          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  place.address,
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 15),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  place.description,
+                  style: const TextStyle(height: 1.5, color: AppTheme.textMuted),
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _MiniPill(
+                      icon: Icons.location_city_rounded,
+                      label: place.type.label,
+                    ),
+                    if (place.photoUrl != null)
+                      const _MiniPill(
+                        icon: Icons.photo_camera_back_rounded,
+                        label: 'Place photo',
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaceCardImage extends StatefulWidget {
+  const _PlaceCardImage({required this.place});
+
+  final UrbanPlace place;
+
+  @override
+  State<_PlaceCardImage> createState() => _PlaceCardImageState();
+}
+
+class _PlaceCardImageState extends State<_PlaceCardImage> {
+  final PlacePhotoService _placePhotoService = const PlacePhotoService();
+  String? _resolvedUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolvedUrl = widget.place.photoUrl ?? widget.place.detectionPreviewUrl;
+    if (_resolvedUrl == null && widget.place.type != UrbanPlaceType.incident) {
+      _lookupPhoto();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _PlaceCardImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.place.id != widget.place.id ||
+        oldWidget.place.photoUrl != widget.place.photoUrl) {
+      _resolvedUrl = widget.place.photoUrl ?? widget.place.detectionPreviewUrl;
+      if (_resolvedUrl == null && widget.place.type != UrbanPlaceType.incident) {
+        _lookupPhoto();
+      }
+    }
+  }
+
+  Future<void> _lookupPhoto() async {
+    final url = await _placePhotoService.lookupPhotoUrl(
+      name: widget.place.name,
+      address: widget.place.address,
+      latitude: widget.place.location.latitude,
+      longitude: widget.place.location.longitude,
+    );
+    if (!mounted || url == null || url.isEmpty) {
+      return;
+    }
+    setState(() {
+      _resolvedUrl = url;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = _resolvedUrl;
+    if (imageUrl == null) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF173545),
+              const Color(0xFF24485B),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            widget.place.type.icon,
+            color: Colors.white.withValues(alpha: 0.88),
+            size: 72,
+          ),
+        ),
+      );
+    }
+
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF173545), Color(0xFF24485B)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            color: Colors.white70,
+            size: 56,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeCue extends StatelessWidget {
+  const _SwipeCue({
+    required this.icon,
+    required this.label,
+    required this.alignment,
+    required this.active,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Alignment alignment;
+  final bool active;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      alignment: alignment,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        color: active ? color.withValues(alpha: 0.16) : AppTheme.glassLight,
+        border: Border.all(
+          color: active ? color.withValues(alpha: 0.55) : Colors.white10,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: active ? color : AppTheme.textSecondary),
+          const SizedBox(width: 8),
           Text(
-            place.description,
-            style: const TextStyle(height: 1.5, color: AppTheme.textMuted),
-            maxLines: 6,
-            overflow: TextOverflow.ellipsis,
+            label,
+            style: TextStyle(
+              color: active ? color : AppTheme.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniPill extends StatelessWidget {
+  const _MiniPill({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.glassLight,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppTheme.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

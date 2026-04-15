@@ -26,7 +26,7 @@ class SupabasePlacesRepository implements PlacesRepository {
     final response = await _client
         .from('urban_places')
         .select(
-          'id, name, type, incident_subtype, detection_model, detection_preview_url, address, description, latitude, longitude, developer, '
+          'id, name, type, incident_subtype, photo_url, detection_model, detection_preview_url, address, description, latitude, longitude, developer, '
           'traffic_risk, co2_footprint, green_coverage, base_scores, issues',
         )
         .order('created_at', ascending: false);
@@ -73,6 +73,7 @@ class SupabasePlacesRepository implements PlacesRepository {
           'name': place.name,
           'type': place.type.key,
           'incident_subtype': place.incidentSubtype?.key,
+          'photo_url': place.photoUrl,
           'detection_model': place.detectionModel,
           'detection_preview_url': place.detectionPreviewUrl,
           'address': place.address,
@@ -87,7 +88,7 @@ class SupabasePlacesRepository implements PlacesRepository {
           'issues': place.issues.map(_serializeIssue).toList(growable: false),
         })
         .select(
-          'id, name, type, incident_subtype, detection_model, detection_preview_url, address, description, latitude, longitude, developer, '
+          'id, name, type, incident_subtype, photo_url, detection_model, detection_preview_url, address, description, latitude, longitude, developer, '
           'traffic_risk, co2_footprint, green_coverage, base_scores, issues',
         )
         .single();
@@ -161,6 +162,7 @@ class SupabasePlacesRepository implements PlacesRepository {
       'name': place.name,
       'type': place.type.key,
       'incident_subtype': place.incidentSubtype?.key,
+      'photo_url': place.photoUrl,
       'detection_model': place.detectionModel,
       'detection_preview_url': place.detectionPreviewUrl,
       'address': place.address,
@@ -184,6 +186,7 @@ class SupabasePlacesRepository implements PlacesRepository {
       incidentSubtype: map['incident_subtype'] == null
           ? null
           : IncidentSubtype.fromKey(map['incident_subtype'] as String?),
+      photoUrl: map['photo_url'] as String?,
       detectionModel: map['detection_model'] as String?,
       detectionPreviewUrl: map['detection_preview_url'] as String?,
       address: map['address'] as String? ?? '',

@@ -6,6 +6,7 @@ import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
 import 'package:hackathon_net/features/auth/domain/app_role.dart';
 import 'package:hackathon_net/features/map/data/openai_place_analysis_service.dart';
+import 'package:hackathon_net/features/map/data/place_photo_service.dart';
 import 'package:hackathon_net/features/map/data/reverse_geocoding_service.dart';
 import 'package:hackathon_net/features/map/models/place_ai_assessment.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -37,10 +38,12 @@ class CreatePlaceSheet extends StatefulWidget {
 class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
   final OpenAiPlaceAnalysisService _openAiPlaceAnalysisService =
       const OpenAiPlaceAnalysisService();
+  final PlacePhotoService _placePhotoService = const PlacePhotoService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _addressController = TextEditingController();
+  final _photoUrlController = TextEditingController();
 
   UrbanPlaceType _selectedType = UrbanPlaceType.incident;
   IncidentSubtype _incidentSubtype = IncidentSubtype.other;
@@ -62,6 +65,7 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
     _nameController.dispose();
     _descriptionController.dispose();
     _addressController.dispose();
+    _photoUrlController.dispose();
     super.dispose();
   }
 
@@ -219,6 +223,17 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
                           return null;
                         },
                       ),
+                      if (_selectedType != UrbanPlaceType.incident) ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _photoUrlController,
+                          decoration: const InputDecoration(
+                            labelText: 'Building photo URL',
+                            hintText:
+                                'Leave empty to auto-fetch from Google Places, or paste a photo URL',
+                          ),
+                        ),
+                      ],
                       if (_addressError != null) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -356,12 +371,25 @@ class _CreatePlaceSheetState extends State<CreatePlaceSheet> {
         ? _incidentSubtype
         : null;
     final detectionModel = incidentSubtype?.modelLabel;
+    String? photoUrl = _photoUrlController.text.trim().isEmpty
+        ? null
+        : _photoUrlController.text.trim();
+
+    if (photoUrl == null && _selectedType != UrbanPlaceType.incident) {
+      photoUrl = await _placePhotoService.lookupPhotoUrl(
+        name: name,
+        address: address,
+        latitude: widget.latitude,
+        longitude: widget.longitude,
+      );
+    }
 
     final place = UrbanPlace(
       id: 'user_${DateTime.now().microsecondsSinceEpoch}',
       name: name,
       type: _selectedType,
       incidentSubtype: incidentSubtype,
+      photoUrl: photoUrl,
       detectionModel: detectionModel,
       address: address,
       description: assessment.description,
