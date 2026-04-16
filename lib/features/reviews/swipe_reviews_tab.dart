@@ -732,20 +732,38 @@ class _ReviewSubmissionDialogState extends State<_ReviewSubmissionDialog> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(
-        widget.direction == SwipeDirection.right
-            ? loc.tr('review_dialog_like_title')
-            : loc.tr('review_dialog_dislike_title'),
+    return Dialog(
+      backgroundColor: AppTheme.bgPrimary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: AppTheme.glassBorder),
       ),
-      content: SizedBox(
+      child: Container(
         width: 520,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppTheme.bgPrimary,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.glassBorder),
+        ),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  widget.direction == SwipeDirection.right
+                      ? loc.tr('review_dialog_like_title')
+                      : loc.tr('review_dialog_dislike_title'),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _summaryController,
                   decoration: InputDecoration(labelText: loc.tr('experience_summary')),
@@ -756,7 +774,7 @@ class _ReviewSubmissionDialogState extends State<_ReviewSubmissionDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _detailsController,
                   minLines: 3,
@@ -769,9 +787,10 @@ class _ReviewSubmissionDialogState extends State<_ReviewSubmissionDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<UrbanCategory>(
                   initialValue: _category,
+                  dropdownColor: AppTheme.bgSecondary,
                   items: UrbanCategory.values
                       .map(
                         (item) => DropdownMenuItem(
@@ -790,60 +809,81 @@ class _ReviewSubmissionDialogState extends State<_ReviewSubmissionDialog> {
                   },
                   decoration: InputDecoration(labelText: loc.tr('comment_category')),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(child: Text('${loc.tr('rating')}: $_rating/5')),
-                    Expanded(
-                      flex: 2,
-                      child: Slider(
-                        min: 1,
-                        max: 5,
-                        divisions: 4,
-                        value: _rating.toDouble(),
-                        onChanged: (value) {
-                          setState(() {
-                            _rating = value.round();
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _pickMedia,
-                    icon: const Icon(Icons.attach_file_rounded),
-                    label: Text(loc.tr('attach_media')),
+                const SizedBox(height: 16),
+                Text(
+                  '${loc.tr('rating')}: $_rating/5',
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 14,
                   ),
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) {
+                    final starIndex = index + 1;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _rating = starIndex;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Icon(
+                          starIndex <= _rating
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          color: starIndex <= _rating
+                              ? AppTheme.accent
+                              : AppTheme.textMuted,
+                          size: 36,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: _pickMedia,
+                  icon: const Icon(Icons.attach_file_rounded),
+                  label: Text(loc.tr('attach_media')),
+                ),
                 if (_mediaFiles.isNotEmpty)
-                  Align(
-                    alignment: Alignment.centerLeft,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
                     child: Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: _mediaFiles
-                          .map((file) => Chip(label: Text(file.name, overflow: TextOverflow.ellipsis)))
+                          .map((file) => Chip(
+                                label: Text(file.name, overflow: TextOverflow.ellipsis),
+                                backgroundColor: AppTheme.glassLight,
+                                side: const BorderSide(color: AppTheme.glassBorder),
+                              ))
                           .toList(growable: false),
                     ),
                   ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(loc.tr('cancel')),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton(
+                      onPressed: _submit,
+                      child: Text(loc.tr('submit_review')),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc.tr('cancel')),
-        ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(loc.tr('submit_review')),
-        ),
-      ],
     );
   }
 

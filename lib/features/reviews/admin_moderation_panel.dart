@@ -205,19 +205,52 @@ class _AdminModerationPanelState extends State<AdminModerationPanel> {
     final controller = TextEditingController();
     final selected = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(approved ? loc.tr('approve') : loc.tr('reject')),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: loc.tr('moderation_reason')),
+      builder: (_) => Dialog(
+        backgroundColor: AppTheme.bgPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.glassBorder),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(loc.tr('cancel'))),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: Text(loc.tr('save')),
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppTheme.bgPrimary,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppTheme.glassBorder),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                approved ? loc.tr('approve') : loc.tr('reject'),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(labelText: loc.tr('moderation_reason')),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(loc.tr('cancel'))),
+                  const SizedBox(width: 12),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+                    child: Text(loc.tr('save')),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
     controller.dispose();
@@ -230,15 +263,45 @@ class _AdminModerationPanelState extends State<AdminModerationPanel> {
   Future<void> _showMediaDialog(String url) {
     return showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Media'),
-        content: SelectableText(url),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(AppLocalizations.of(context).tr('close')),
+      builder: (_) => Dialog(
+        backgroundColor: AppTheme.bgPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.glassBorder),
+        ),
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppTheme.bgPrimary,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppTheme.glassBorder),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Media',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SelectableText(url),
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(AppLocalizations.of(context).tr('close')),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

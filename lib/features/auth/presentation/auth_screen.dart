@@ -284,6 +284,7 @@ class _AuthFormCard extends StatelessWidget {
             TextFormField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Email'),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -299,6 +300,10 @@ class _AuthFormCard extends StatelessWidget {
             TextFormField(
               controller: passwordController,
               obscureText: true,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) {
+                if (!isBusy) onSubmit();
+              },
               decoration: const InputDecoration(labelText: 'Password'),
               validator: (value) {
                 if (value == null || value.isEmpty) {

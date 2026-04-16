@@ -9,7 +9,7 @@ from fire_router import router as fire_router
 from route_router import router as route_router
 
 BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")
 
 app = FastAPI(title="urban syrix detection backend", version="1.0.0")
 

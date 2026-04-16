@@ -126,27 +126,54 @@ class SupabaseSwipeReviewsRepository implements SwipeReviewsRepository {
         .select('''
           id,
           organization_id,
+          user_id,
           summary,
           details,
           category,
           rating,
           media_urls,
           created_at,
-          profiles:profiles!swipe_reviews_user_id_fkey(email),
           urban_places(name)
         ''')
         .eq('moderation_status', 'pending')
         .order('created_at', ascending: true);
 
+    // Collect unique user IDs to resolve author names from profiles table.
+    final userIds = <String>{};
+    for (final row in response) {
+      final uid = row['user_id'] as String?;
+      if (uid != null && uid.isNotEmpty) {
+        userIds.add(uid);
+      }
+    }
+
+    // Fetch profile emails in one go (if any users exist).
+    final Map<String, String> emailByUserId = {};
+    if (userIds.isNotEmpty) {
+      try {
+        final profiles = await _client
+            .from('profiles')
+            .select('id, email')
+            .inFilter('id', userIds.toList());
+        for (final p in profiles) {
+          final id = p['id'] as String?;
+          final email = p['email'] as String?;
+          if (id != null && email != null) {
+            emailByUserId[id] = email;
+          }
+        }
+      } catch (_) {
+        // Profiles lookup is best-effort; fall back to user ID prefix.
+      }
+    }
+
     return response.map<ModerationReviewItem>((row) {
       final map = Map<String, dynamic>.from(row);
-      final profileMap = map['profiles'] is Map
-          ? Map<String, dynamic>.from(map['profiles'] as Map)
-          : const <String, dynamic>{};
       final placeMap = map['urban_places'] is Map
           ? Map<String, dynamic>.from(map['urban_places'] as Map)
           : const <String, dynamic>{};
-      final email = profileMap['email'] as String? ?? 'resident@user';
+      final userId = map['user_id'] as String? ?? '';
+      final email = emailByUserId[userId] ?? 'user-${userId.substring(0, (userId.length < 8 ? userId.length : 8))}';
       final media = (map['media_urls'] as List<dynamic>? ?? const [])
           .map((entry) => entry.toString())
           .toList(growable: false);
@@ -154,7 +181,7 @@ class SupabaseSwipeReviewsRepository implements SwipeReviewsRepository {
         reviewId: map['id'].toString(),
         organizationId: map['organization_id'].toString(),
         organizationName: placeMap['name'] as String? ?? 'Unknown place',
-        authorName: email.split('@').first,
+        authorName: email.contains('@') ? email.split('@').first : email,
         summary: map['summary'] as String? ?? '',
         details: map['details'] as String? ?? '',
         category: UrbanCategory.fromKey(map['category'] as String?),
