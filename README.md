@@ -4,6 +4,10 @@
 
 The project combines a **Flutter Web** client with a **Supabase** backend for auth/data and a **FastAPI** microservice for computer-vision detection and safe-route planning.
 
+🔗 **Live demo:** [urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io](https://urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io)
+
+Deployed as two containers on Azure Container Apps (frontend + FastAPI backend), built from the `Dockerfile`s in this repo. Both scale to zero when idle, so the first request after a period of inactivity may take 10-20s to respond (cold start).
+
 ## Contents
 
 - [Overview](#overview)
@@ -13,6 +17,7 @@ The project combines a **Flutter Web** client with a **Supabase** backend for au
 - [Project structure](#project-structure)
 - [Getting started](#getting-started)
 - [Running with Docker](#running-with-docker)
+- [Deployment](#deployment)
 - [Environment variables](#environment-variables)
 - [Backend API](#backend-api)
 - [Security notes](#security-notes)
@@ -236,6 +241,43 @@ Routing:
 Health:
 
 - `GET /api/health`
+
+## Deployment
+
+The live demo runs on **Azure Container Apps** (Consumption plan, `germanywestcentral`), one app per service:
+
+- `urbansyr-frontend` — the `Dockerfile` image, built with `--build-arg` values baked in via Flutter's `--dart-define`, served by Nginx
+- `urbansyr-backend` — the `backend/Dockerfile` image, exposing port 8002
+
+Both images are built for `linux/amd64` (via `docker buildx build --platform linux/amd64`, since Azure Container Apps does not run `arm64` images) and published to Docker Hub, then deployed with:
+
+```bash
+az containerapp create \
+  --name urbansyr-backend \
+  --resource-group <rg> \
+  --environment <env> \
+  --image <dockerhub-user>/urbansyr-backend:latest \
+  --target-port 8002 \
+  --ingress external \
+  --min-replicas 0 --max-replicas 1 \
+  --cpu 2.0 --memory 4.0Gi \
+  --secrets orsk=<openrouteservice-key> \
+  --env-vars "OPENROUTESERVICE_API_KEY=secretref:orsk" "ALLOWED_ORIGINS=<frontend-url>"
+```
+
+```bash
+az containerapp create \
+  --name urbansyr-frontend \
+  --resource-group <rg> \
+  --environment <env> \
+  --image <dockerhub-user>/urbansyr-frontend:latest \
+  --target-port 80 \
+  --ingress external \
+  --min-replicas 0 --max-replicas 1 \
+  --cpu 0.5 --memory 1.0Gi
+```
+
+Both apps scale to zero when idle (`min-replicas 0`) to stay within Azure's free monthly Container Apps grant — the trade-off is a cold start of roughly 10-20s on the first request after a period of inactivity.
 
 ## Security notes
 
