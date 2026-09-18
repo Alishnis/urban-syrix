@@ -50,3 +50,5 @@ app.*.map.json
 # Local backend secrets and artifacts
 /backend/.env
 /backend/tmp/
+/backend/.venv/
+/backend/__pycache__/

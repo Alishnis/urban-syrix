@@ -1,107 +1,105 @@
-# urban syrix
+# Urban Syrix
 
-`urban syrix` is a Flutter web smart-city platform for:
+**Urban Syrix** is a smart-city operations platform that lets residents, builders, and municipal administrators monitor a city on a live map, report incidents, and get AI-assisted insight into places and reviews.
 
-- map-based city object monitoring
-- incident reporting (`fire`, `car accident`, `other`)
-- role-based access with Supabase
-- AI-assisted place scoring and review impact
-- safe route planning around incident zones
-- multilingual UI (`EN`, `RU`, `KZ`)
+The project combines a **Flutter Web** client with a **Supabase** backend for auth/data and a **FastAPI** microservice for computer-vision detection and safe-route planning.
 
-This repo contains both:
+## Contents
 
-- the Flutter frontend
-- the local FastAPI backend used for detection and route building
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Tech stack](#tech-stack)
+- [Features](#features)
+- [Project structure](#project-structure)
+- [Getting started](#getting-started)
+- [Running with Docker](#running-with-docker)
+- [Environment variables](#environment-variables)
+- [Backend API](#backend-api)
+- [Security notes](#security-notes)
 
-## Stack
+## Overview
 
-- Flutter Web
-- Supabase Auth + Postgres
-- Google Maps
-- FastAPI
-- OpenAI API
-- OpenRouteService
+City infrastructure incidents (fires, traffic accidents, utility works) are reported in real time on a shared map. Residents and builders can add points of interest, leave reviews, and request routes that automatically avoid active accident zones. An OpenAI-backed scoring service evaluates places and the impact of reviews, while two YOLOv8 models run fire and accident detection on uploaded images/video.
+
+## Architecture
+
+```
+                     ┌─────────────────────────┐
+                     │     Flutter Web App      │
+                     │  (auth, map, dashboard)  │
+                     └────────────┬─────────────┘
+                                  │
+             ┌────────────────────┼────────────────────┐
+             │                    │                    │
+   ┌─────────▼─────────┐ ┌────────▼────────┐  ┌────────▼────────┐
+   │      Supabase      │ │   FastAPI       │  │   OpenAI API    │
+   │ (Auth + Postgres)  │ │   backend       │  │ (place scoring, │
+   │                     │ │ (YOLOv8 + ORS)  │  │  review impact) │
+   └─────────────────────┘ └─────────────────┘  └─────────────────┘
+```
+
+- **Flutter Web** renders the map, dashboards, and role-based views, and talks directly to Supabase (auth + Postgres) and to the FastAPI backend for detection/routing.
+- **FastAPI backend** hosts two YOLOv8 models (fire detection, traffic-accident detection) and a safe-routing endpoint backed by OpenRouteService.
+- **Supabase** provides authentication, Postgres storage (`profiles`, `urban_places`, `urban_place_reviews`), and row-level security.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Flutter Web, Google Maps SDK |
+| Auth & Database | Supabase (Postgres + Auth + RLS) |
+| Detection backend | FastAPI, Ultralytics YOLOv8, OpenCV |
+| AI scoring | OpenAI API |
+| Routing | OpenRouteService API |
+| Deployment | Docker, Docker Compose, Nginx |
 
 ## Features
 
-- email/password auth
-- roles: `resident`, `builder`, `admin`
-- add `place` and `accident` points directly from the map
-- reverse geocoding for addresses
-- `fire` / `car accident` media analysis
-- comments and reviews stored in Supabase
-- AI-based score calculation for places and review impact
-- safe routing that avoids accident zones
+- Email/password authentication with role-based access (`resident`, `builder`, `admin`)
+- Map-based reporting of city objects and incidents (`fire`, `car accident`, `other`)
+- Reverse geocoding for reported locations
+- Fire and traffic-accident detection from images/video via on-prem YOLOv8 models
+- AI-assisted scoring of places and review impact via OpenAI
+- Safe-route planning that automatically routes around active accident zones
+- Comments and reviews persisted in Supabase with RLS policies
+- Multilingual UI (`EN`, `RU`, `KZ`)
 
 ## Project structure
 
 ```text
 lib/                    Flutter frontend
-backend/                FastAPI backend for detection and routing
-supabase/               SQL setup scripts
+  core/config/           Runtime configuration (Supabase, Maps, OpenAI, API base URL)
+  features/              auth, dashboard, map, reviews, account, shell
+backend/                 FastAPI backend
+  fire_router.py          Fire detection (YOLOv8)
+  accident_router.py      Traffic-accident detection (YOLOv8)
+  route_router.py          Safe-route planning (OpenRouteService)
+modules/                 YOLOv8 weights used by the backend routers
+supabase/                SQL setup scripts (schema, RLS, review system)
+Dockerfile               Multi-stage build: Flutter web -> Nginx
+backend/Dockerfile        FastAPI + YOLOv8 backend image
+docker-compose.yml        Runs frontend + backend together
 ```
 
-Important paths:
+## Getting started
 
-- [lib/main.dart](/Users/aliserromankul/Desktop/arsen/hackathon_net/lib/main.dart)
-- [backend/main.py](/Users/aliserromankul/Desktop/arsen/hackathon_net/backend/main.py)
-- [supabase/profiles.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/profiles.sql)
-- [supabase/urban_places.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/urban_places.sql)
-- [supabase/urban_place_reviews.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/urban_place_reviews.sql)
-
-## Prerequisites
-
-Install locally:
+### Prerequisites
 
 - Flutter SDK
 - Python 3.10+
-- Google Chrome
-- a Supabase project
+- A Supabase project (Auth enabled)
+- Optional: OpenAI API key, OpenRouteService API key, Google Maps API key
 
-Optional but recommended:
+### 1. Supabase setup
 
-- OpenAI API key
-- OpenRouteService API key
+Create a Supabase project and enable email auth, then run the SQL scripts in the Supabase SQL editor in this order:
 
-## 1. Supabase setup
+1. [`supabase/profiles.sql`](supabase/profiles.sql)
+2. [`supabase/urban_places.sql`](supabase/urban_places.sql)
+3. [`supabase/urban_place_reviews.sql`](supabase/urban_place_reviews.sql)
+4. [`supabase/swipe_review_system.sql`](supabase/swipe_review_system.sql)
 
-Create a Supabase project and enable Email auth.
-
-You need:
-
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-
-### Required SQL
-
-Run these scripts in Supabase SQL Editor:
-
-1. [supabase/profiles.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/profiles.sql)
-2. [supabase/urban_places.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/urban_places.sql)
-3. [supabase/urban_place_reviews.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/urban_place_reviews.sql)
-
-These scripts create:
-
-- `public.profiles`
-- `public.urban_places`
-- `public.urban_place_reviews`
-- RLS policies and grants used by the app
-
-### Roles
-
-Available roles:
-
-- `resident`
-- `builder`
-- `admin`
-
-Notes:
-
-- public sign-up allows only `resident` and `builder`
-- `admin` should be assigned manually
-
-Example:
+Public sign-up only allows `resident` and `builder`. Promote an account to `admin` manually:
 
 ```sql
 update public.profiles
@@ -109,24 +107,14 @@ set role = 'admin'
 where email = 'user@example.com';
 ```
 
-## 2. Backend setup
-
-The local backend is used for:
-
-- `fire` detection
-- `car accident` detection
-- safe route building
-
-### Backend install
+### 2. Backend setup
 
 ```bash
-cd /Users/aliserromankul/Desktop/arsen/hackathon_net/backend
+cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-
-### Backend environment
 
 Create `backend/.env`:
 
@@ -134,27 +122,105 @@ Create `backend/.env`:
 OPENROUTESERVICE_API_KEY=your_openrouteservice_key
 ```
 
-`OPENROUTESERVICE_API_KEY` is required for safe routing.
-
-### Run backend
+Run it:
 
 ```bash
-cd /Users/aliserromankul/Desktop/arsen/hackathon_net/backend
-source .venv/bin/activate
-python main.py
+uvicorn main:app --host 0.0.0.0 --port 8002
 ```
-
-The backend runs on:
-
-- `http://localhost:8001`
 
 Health check:
 
 ```bash
-curl http://localhost:8001/api/health
+curl http://localhost:8002/api/health
 ```
 
-### Backend endpoints
+### 3. Frontend setup
+
+```bash
+flutter pub get
+```
+
+Minimal run (auth + frontend only):
+
+```bash
+flutter run -d chrome \
+  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-anon-key
+```
+
+Full local run (detection, routing, AI scoring included):
+
+```bash
+flutter run -d chrome \
+  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-anon-key \
+  --dart-define=DETECTION_API_BASE_URL=http://localhost:8002 \
+  --dart-define=OPENAI_API_KEY=your-openai-key
+```
+
+Or run as a stable local web server:
+
+```bash
+flutter run -d web-server --web-port 8080 \
+  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-anon-key \
+  --dart-define=DETECTION_API_BASE_URL=http://localhost:8002 \
+  --dart-define=OPENAI_API_KEY=your-openai-key
+```
+
+Then open [http://localhost:8080](http://localhost:8080).
+
+## Running with Docker
+
+The repository ships with a `Dockerfile` for the Flutter web frontend, a `backend/Dockerfile` for the FastAPI service, and a `docker-compose.yml` that wires both together.
+
+1. Copy `.env.example` to `.env` in the project root and fill in real values:
+
+```bash
+cp .env.example .env
+```
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+DETECTION_API_BASE_URL=http://localhost:8002
+OPENAI_API_KEY=your-openai-key
+OPENROUTESERVICE_API_KEY=your-openrouteservice-key
+GOOGLE_MAPS_API_KEY=your-google-maps-key
+ALLOWED_ORIGINS=http://localhost:8080
+```
+
+2. Build and start both services:
+
+```bash
+docker-compose up -d --build
+```
+
+- Frontend: [http://localhost:8080](http://localhost:8080) (served by Nginx)
+- Backend: [http://localhost:8002/api/health](http://localhost:8002/api/health)
+
+Frontend build-time configuration (Supabase URL/key, detection API URL, OpenAI key) is baked into the compiled web bundle via `--dart-define`/`ARG` at image build time — rebuild the frontend image whenever these change.
+
+## Environment variables
+
+**Frontend** (compile-time, via `--dart-define` or Docker build args):
+
+| Variable | Purpose |
+|---|---|
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Supabase public client key |
+| `DETECTION_API_BASE_URL` | Base URL of the FastAPI backend |
+| `OPENAI_API_KEY` | Used for place scoring / review impact |
+| `GOOGLE_MAPS_API_KEY` | Optional override of the default Maps key |
+
+**Backend** (runtime, via `backend/.env` or container environment):
+
+| Variable | Purpose |
+|---|---|
+| `OPENROUTESERVICE_API_KEY` | Required for safe-route planning |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (defaults to `*`) |
+
+## Backend API
 
 Detection:
 
@@ -167,203 +233,12 @@ Routing:
 
 - `POST /api/route/safe-route`
 
-## 3. Flutter setup
+Health:
 
-Install frontend dependencies:
+- `GET /api/health`
 
-```bash
-cd /Users/aliserromankul/Desktop/arsen/hackathon_net
-flutter pub get
-```
+## Security notes
 
-## 4. Run Flutter web
-
-### Minimal run
-
-If you only need auth + frontend:
-
-```bash
-flutter run -d chrome \
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key
-```
-
-### Full local run
-
-For full app functionality including detection, routing, and AI scoring:
-
-```bash
-flutter run -d chrome \
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key \
-  --dart-define=DETECTION_API_BASE_URL=http://localhost:8001 \
-  --dart-define=OPENAI_API_KEY=your-openai-key
-```
-
-### Web-server run
-
-Useful if you want a stable local URL:
-
-```bash
-flutter run -d web-server --web-port 8080 \
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key \
-  --dart-define=DETECTION_API_BASE_URL=http://localhost:8001 \
-  --dart-define=OPENAI_API_KEY=your-openai-key
-```
-
-Then open:
-
-- [http://localhost:8080](http://localhost:8080)
-
-## Runtime variables
-
-Frontend:
-
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `DETECTION_API_BASE_URL`
-- `OPENAI_API_KEY`
-- `GOOGLE_MAPS_API_KEY` (optional override if you do not want to use the default one in the repo)
-
-Backend:
-
-- `OPENROUTESERVICE_API_KEY`
-
-## What each variable does
-
-`SUPABASE_URL`
-
-- Supabase project URL
-- required for auth and database access
-
-`SUPABASE_ANON_KEY`
-
-- public client key for Supabase
-- required for auth and frontend DB access
-
-`DETECTION_API_BASE_URL`
-
-- base URL for local FastAPI backend
-- used for fire / accident detection and safe route requests
-
-`OPENAI_API_KEY`
-
-- used to analyze place descriptions
-- used to analyze comments and map them into score impact
-
-`OPENROUTESERVICE_API_KEY`
-
-- used by backend safe route logic
-
-## Local development flow
-
-Recommended order:
-
-1. Start backend
-2. Start Flutter app
-3. Sign in with a `builder` account
-4. Open the map
-5. Add a `place` or `accident`
-6. Test detection, comments, and routing
-
-## Typical demo flow
-
-1. Sign in as `builder`
-2. Click `Add accident`
-3. Select `fire` or `car accident`
-4. Upload media
-5. Run `Analyze media`
-6. Add incident to the map
-7. Set route start and end
-8. Build safe route
-9. Open a place and add a comment
-10. Observe score changes
-
-## Common issues
-
-### Profile setup is incomplete
-
-Reason:
-
-- `profiles` table or policies are missing
-- or Supabase request is blocked
-
-Fix:
-
-- run [supabase/profiles.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/profiles.sql)
-- verify `grant` and RLS policies exist
-
-### New places do not persist
-
-Reason:
-
-- `urban_places` table is missing
-
-Fix:
-
-- run [supabase/urban_places.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/urban_places.sql)
-
-### Comments do not persist
-
-Reason:
-
-- `urban_place_reviews` table is missing
-
-Fix:
-
-- run [supabase/urban_place_reviews.sql](/Users/aliserromankul/Desktop/arsen/hackathon_net/supabase/urban_place_reviews.sql)
-
-### Description scoring stays medium
-
-Reason:
-
-- app was started without `OPENAI_API_KEY`
-- fallback score constants were used instead of OpenAI
-
-Fix:
-
-- restart Flutter with `--dart-define=OPENAI_API_KEY=...`
-
-### Detection fails
-
-Reason:
-
-- backend is not running
-- wrong `DETECTION_API_BASE_URL`
-
-Fix:
-
-- verify backend on `http://localhost:8001/api/health`
-
-### Safe route fails
-
-Reason:
-
-- backend not running
-- `OPENROUTESERVICE_API_KEY` missing in `backend/.env`
-
-## Verify setup
-
-Frontend analysis:
-
-```bash
-cd /Users/aliserromankul/Desktop/arsen/hackathon_net
-flutter analyze
-```
-
-Backend health:
-
-```bash
-curl http://localhost:8001/api/health
-```
-
-## Security note
-
-Current repo still contains a Google Maps API key in client-facing files. For production:
-
-- move all possible keys to runtime configuration
-- rotate exposed keys
-- do not expose server-level secrets to Flutter web clients
-
-For production architecture, OpenAI calls should ideally be moved out of the web client and into a backend or Supabase Edge Function.
+- Frontend secrets passed via `--dart-define` are compiled into the client-side JS bundle and are visible to anyone inspecting the deployed site. Treat `SUPABASE_ANON_KEY` and `OPENAI_API_KEY` accordingly — the anon key is designed to be public and relies on Supabase RLS; the OpenAI key is not, and moving OpenAI calls behind the backend (or a Supabase Edge Function) is the recommended hardening step before a public production deploy.
+- `ALLOWED_ORIGINS` defaults to `*` for convenience; set it to your real frontend origin in production.
+- Rotate any API keys that were used during local development/demos before shipping to a public environment.

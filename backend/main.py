@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -13,9 +14,13 @@ load_dotenv(BASE_DIR.parent / ".env")
 
 app = FastAPI(title="urban syrix detection backend", version="1.0.0")
 
+_allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=(
+        ["*"] if _allowed_origins == "*" else
+        [origin.strip() for origin in _allowed_origins.split(",") if origin.strip()]
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
