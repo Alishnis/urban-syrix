@@ -144,6 +144,12 @@ class _AuthScreenState extends State<AuthScreen> {
           role: _selectedRole,
         );
       }
+      // When reached by pushing from the public map screen, this reveals
+      // the RootGate route underneath, which has already rebuilt into
+      // AppShell now that AuthController reports an authenticated user.
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
     } on AuthException catch (error) {
       setState(() {
         _errorText = error.message;

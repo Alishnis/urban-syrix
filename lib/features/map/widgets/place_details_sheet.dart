@@ -10,14 +10,18 @@ class PlaceDetailsSheet extends StatefulWidget {
   const PlaceDetailsSheet({
     super.key,
     required this.place,
-    required this.onAddReview,
+    this.isAuthenticated = true,
+    this.onRequireAuth,
+    this.onAddReview,
   });
 
   final UrbanPlace place;
+  final bool isAuthenticated;
+  final VoidCallback? onRequireAuth;
   final Future<UrbanReview> Function({
     required String message,
     required UrbanCategory category,
-  })
+  })?
   onAddReview;
 
   @override
@@ -294,81 +298,113 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                   const SizedBox(height: 14),
                   SectionEyebrow(label: loc.tr('citizen_comments')),
                   const SizedBox(height: 12),
-                  GlassPanel(
-                    borderRadius: 20,
-                    padding: const EdgeInsets.all(16),
-                    blur: false,
-                    backgroundColor: const Color(0xFF161D29),
-                    child: Form(
-                      key: _reviewFormKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  if (!widget.isAuthenticated)
+                    GlassPanel(
+                      borderRadius: 20,
+                      padding: const EdgeInsets.all(16),
+                      blur: false,
+                      backgroundColor: const Color(0xFF161D29),
+                      child: Row(
                         children: [
-                          TextFormField(
-                            controller: _reviewController,
-                            minLines: 2,
-                            maxLines: 4,
-                            decoration: InputDecoration(
-                              labelText: loc.tr('leave_comment'),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return loc.tr('enter_comment');
-                              }
-                              return null;
-                            },
+                          const Icon(
+                            Icons.lock_outline_rounded,
+                            color: AppTheme.textMuted,
                           ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<UrbanCategory>(
-                            initialValue: _selectedCategory,
-                            dropdownColor: AppTheme.bgTertiary,
-                            decoration: InputDecoration(
-                              labelText: loc.tr('comment_category'),
-                            ),
-                            items: UrbanCategory.values
-                                .map(
-                                  (category) => DropdownMenuItem(
-                                    value: category,
-                                    child: Text(loc.categoryLabel(category)),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value == null) {
-                                return;
-                              }
-                              setState(() {
-                                _selectedCategory = value;
-                              });
-                            },
-                          ),
-                          if (_reviewError != null) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              _reviewError!,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              loc.tr('sign_in_to_comment'),
                               style: const TextStyle(
-                                color: AppTheme.danger,
-                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textSecondary,
                               ),
                             ),
-                          ],
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: FilledButton.icon(
-                              onPressed: _isSavingReview ? null : _submitReview,
-                              icon: const Icon(Icons.send_rounded),
-                              label: Text(
-                                _isSavingReview
-                                    ? loc.tr('adding')
-                                    : loc.tr('post_comment'),
-                              ),
-                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          FilledButton(
+                            onPressed: widget.onRequireAuth,
+                            child: Text(loc.tr('sign_in')),
                           ),
                         ],
                       ),
+                    )
+                  else
+                    GlassPanel(
+                      borderRadius: 20,
+                      padding: const EdgeInsets.all(16),
+                      blur: false,
+                      backgroundColor: const Color(0xFF161D29),
+                      child: Form(
+                        key: _reviewFormKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextFormField(
+                              controller: _reviewController,
+                              minLines: 2,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                labelText: loc.tr('leave_comment'),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return loc.tr('enter_comment');
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<UrbanCategory>(
+                              initialValue: _selectedCategory,
+                              dropdownColor: AppTheme.bgTertiary,
+                              decoration: InputDecoration(
+                                labelText: loc.tr('comment_category'),
+                              ),
+                              items: UrbanCategory.values
+                                  .map(
+                                    (category) => DropdownMenuItem(
+                                      value: category,
+                                      child: Text(loc.categoryLabel(category)),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                if (value == null) {
+                                  return;
+                                }
+                                setState(() {
+                                  _selectedCategory = value;
+                                });
+                              },
+                            ),
+                            if (_reviewError != null) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                _reviewError!,
+                                style: const TextStyle(
+                                  color: AppTheme.danger,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: FilledButton.icon(
+                                onPressed: _isSavingReview
+                                    ? null
+                                    : _submitReview,
+                                icon: const Icon(Icons.send_rounded),
+                                label: Text(
+                                  _isSavingReview
+                                      ? loc.tr('adding')
+                                      : loc.tr('post_comment'),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 12),
                   if (_place.reviews.isEmpty)
                     Text(loc.tr('no_comments'))
@@ -410,7 +446,8 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
     });
 
     try {
-      final review = await widget.onAddReview(
+      // The composer that calls this is only rendered when authenticated.
+      final review = await widget.onAddReview!(
         message: _reviewController.text.trim(),
         category: _selectedCategory,
       );

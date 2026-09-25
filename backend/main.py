@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from accident_router import router as accident_router
+from ai_router import router as ai_router
 from fire_router import router as fire_router
 from route_router import router as route_router
 
@@ -33,6 +34,7 @@ app.include_router(
     tags=["Accident Detection"],
 )
 app.include_router(route_router, prefix="/api/route", tags=["Safe Routing"])
+app.include_router(ai_router, prefix="/api/ai", tags=["AI Scoring"])
 
 
 @app.get("/api/health")

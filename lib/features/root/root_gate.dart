@@ -3,8 +3,8 @@ import 'package:hackathon_net/core/config/supabase_config.dart';
 import 'package:hackathon_net/core/theme/app_theme.dart';
 import 'package:hackathon_net/core/widgets/city_background.dart';
 import 'package:hackathon_net/features/auth/presentation/auth_scope.dart';
-import 'package:hackathon_net/features/auth/presentation/auth_screen.dart';
 import 'package:hackathon_net/features/auth/presentation/supabase_setup_screen.dart';
+import 'package:hackathon_net/features/public/public_map_screen.dart';
 import 'package:hackathon_net/features/shell/app_shell.dart';
 
 class RootGate extends StatelessWidget {
@@ -71,6 +71,6 @@ class RootGate extends StatelessWidget {
     if (auth.isAuthenticated) {
       return const AppShell();
     }
-    return const AuthScreen();
+    return const PublicMapScreen();
   }
 }

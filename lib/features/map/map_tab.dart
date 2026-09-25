@@ -22,18 +22,22 @@ class MapTab extends StatefulWidget {
     super.key,
     required this.places,
     required this.currentRole,
-    required this.onCreatePlace,
-    required this.onAddReview,
+    this.isAuthenticated = true,
+    this.onRequireAuth,
+    this.onCreatePlace,
+    this.onAddReview,
   });
 
   final List<UrbanPlace> places;
   final AppRole currentRole;
-  final Future<void> Function(UrbanPlace place) onCreatePlace;
+  final bool isAuthenticated;
+  final VoidCallback? onRequireAuth;
+  final Future<void> Function(UrbanPlace place)? onCreatePlace;
   final Future<UrbanReview> Function({
     required UrbanPlace place,
     required String message,
     required UrbanCategory category,
-  })
+  })?
   onAddReview;
 
   @override
@@ -59,14 +63,21 @@ class _MapTabState extends State<MapTab> {
   bool _isBuildingRoute = false;
 
   bool get _canCreatePlace =>
-      widget.currentRole == AppRole.builder ||
-      widget.currentRole == AppRole.admin;
+      widget.isAuthenticated &&
+      (widget.currentRole == AppRole.builder ||
+          widget.currentRole == AppRole.admin);
   bool get _canCreateAccident =>
-      widget.currentRole == AppRole.resident ||
-      widget.currentRole == AppRole.builder ||
-      widget.currentRole == AppRole.admin;
+      widget.isAuthenticated &&
+      (widget.currentRole == AppRole.resident ||
+          widget.currentRole == AppRole.builder ||
+          widget.currentRole == AppRole.admin);
 
   bool get _canCreateAnyPoint => _canCreatePlace || _canCreateAccident;
+
+  // Guests always see the create buttons (so they can discover the feature
+  // and get routed to sign in) even though they never have real permission.
+  bool get _showPlaceButton => !widget.isAuthenticated || _canCreatePlace;
+  bool get _showAccidentButton => !widget.isAuthenticated || _canCreateAccident;
 
   @override
   Widget build(BuildContext context) {
@@ -278,13 +289,17 @@ class _MapTabState extends State<MapTab> {
                                 _safeRoute != null,
                             onTap: _clearRoute,
                           ),
-                          if (_canCreatePlace)
+                          if (_showPlaceButton)
                             _ModeButton(
                               label: loc.tr('add_place'),
                               isActive: _createMode == _MapCreateMode.place,
                               icon: Icons.apartment_rounded,
-                              enabled: _canCreatePlace,
+                              enabled: true,
                               onTap: () {
+                                if (!widget.isAuthenticated) {
+                                  widget.onRequireAuth?.call();
+                                  return;
+                                }
                                 setState(() {
                                   _routeSelectMode = _RouteSelectMode.none;
                                   _createMode =
@@ -294,13 +309,17 @@ class _MapTabState extends State<MapTab> {
                                 });
                               },
                             ),
-                          if (_canCreateAccident)
+                          if (_showAccidentButton)
                             _ModeButton(
                               label: loc.tr('add_accident'),
                               isActive: _createMode == _MapCreateMode.accident,
                               icon: Icons.car_crash_rounded,
-                              enabled: _canCreateAccident,
+                              enabled: true,
                               onTap: () {
+                                if (!widget.isAuthenticated) {
+                                  widget.onRequireAuth?.call();
+                                  return;
+                                }
                                 setState(() {
                                   _routeSelectMode = _RouteSelectMode.none;
                                   _createMode =
@@ -310,7 +329,7 @@ class _MapTabState extends State<MapTab> {
                                 });
                               },
                             ),
-                          if (!_canCreateAnyPoint)
+                          if (widget.isAuthenticated && !_canCreateAnyPoint)
                             Padding(
                               padding: const EdgeInsets.only(left: 4, top: 10),
                               child: Text(
@@ -559,13 +578,16 @@ class _MapTabState extends State<MapTab> {
         heightFactor: 0.9,
         child: PlaceDetailsSheet(
           place: place,
-          onAddReview:
-              ({required String message, required UrbanCategory category}) =>
-                  widget.onAddReview(
-                    place: place,
-                    message: message,
-                    category: category,
-                  ),
+          isAuthenticated: widget.isAuthenticated,
+          onRequireAuth: widget.onRequireAuth,
+          onAddReview: widget.onAddReview == null
+              ? null
+              : ({required String message, required UrbanCategory category}) =>
+                    widget.onAddReview!(
+                      place: place,
+                      message: message,
+                      category: category,
+                    ),
         ),
       ),
     ).whenComplete(() {
@@ -672,7 +694,8 @@ class _MapTabState extends State<MapTab> {
           longitude: target.longitude,
           role: widget.currentRole,
           reverseGeocodingService: _reverseGeocodingService,
-          onCreate: widget.onCreatePlace,
+          // Only reachable via an authenticated user's "add place" tap.
+          onCreate: widget.onCreatePlace!,
           initialType: UrbanPlaceType.building,
           allowedTypes: const [
             UrbanPlaceType.building,
@@ -771,7 +794,8 @@ class _MapTabState extends State<MapTab> {
           latitude: target.latitude,
           longitude: target.longitude,
           reverseGeocodingService: _reverseGeocodingService,
-          onCreate: widget.onCreatePlace,
+          // Only reachable via an authenticated user's "add accident" tap.
+          onCreate: widget.onCreatePlace!,
         ),
       ),
     );

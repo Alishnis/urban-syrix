@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:hackathon_net/core/config/openai_config.dart';
+import 'package:hackathon_net/core/config/detection_api_config.dart';
 import 'package:hackathon_net/domain/models/urban_models.dart';
 import 'package:hackathon_net/features/map/models/review_ai_assessment.dart';
 import 'package:http/http.dart' as http;
@@ -14,73 +14,15 @@ class OpenAiReviewImpactService {
     required UrbanCategory selectedCategory,
   }) async {
     final response = await http.post(
-      Uri.parse('https://api.openai.com/v1/responses'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${OpenAiConfig.apiKey}',
-      },
+      Uri.parse(DetectionApiConfig.endpoint('/api/ai/review-impact')),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'model': 'gpt-4o-mini',
-        'input': [
-          {
-            'role': 'system',
-            'content': [
-              {
-                'type': 'input_text',
-                'text':
-                    'You analyze citizen feedback for urban projects. '
-                    'Return a structured sentiment and numeric score impact for these categories: '
-                    'mobility, environment, resources, transparency, inclusivity, safety. '
-                    'Each impact must be an integer between -12 and 12, where negative lowers the score and positive raises it. '
-                    'Stay realistic and conservative. Only reflect concerns actually present in the comment.',
-              },
-            ],
-          },
-          {
-            'role': 'user',
-            'content': [
-              {
-                'type': 'input_text',
-                'text':
-                    'Project: ${place.name}\n'
-                    'Type: ${place.type.label}\n'
-                    'Address: ${place.address}\n'
-                    'Current description: ${place.description}\n'
-                    'User selected category: ${selectedCategory.label}\n'
-                    'Comment: $message',
-              },
-            ],
-          },
-        ],
-        'text': {
-          'format': {
-            'type': 'json_schema',
-            'name': 'urban_review_impact',
-            'strict': true,
-            'schema': {
-              'type': 'object',
-              'additionalProperties': false,
-              'properties': {
-                'sentiment': {'type': 'integer'},
-                'mobility': {'type': 'integer'},
-                'environment': {'type': 'integer'},
-                'resources': {'type': 'integer'},
-                'transparency': {'type': 'integer'},
-                'inclusivity': {'type': 'integer'},
-                'safety': {'type': 'integer'},
-              },
-              'required': [
-                'sentiment',
-                'mobility',
-                'environment',
-                'resources',
-                'transparency',
-                'inclusivity',
-                'safety',
-              ],
-            },
-          },
-        },
+        'place_name': place.name,
+        'place_type_label': place.type.label,
+        'place_address': place.address,
+        'place_description': place.description,
+        'selected_category_label': selectedCategory.label,
+        'message': message,
       }),
     );
 
@@ -91,8 +33,7 @@ class OpenAiReviewImpactService {
     }
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
-    final outputText =
-        payload['output_text'] as String? ?? _extractOutputText(payload);
+    final outputText = payload['output_text'] as String? ?? '{}';
     final decoded = jsonDecode(outputText) as Map<String, dynamic>;
 
     return ReviewAiAssessment(
@@ -106,21 +47,6 @@ class OpenAiReviewImpactService {
         UrbanCategory.safety: _impact(decoded['safety']),
       },
     );
-  }
-
-  String _extractOutputText(Map<String, dynamic> payload) {
-    final output = payload['output'] as List<dynamic>? ?? const [];
-    for (final item in output) {
-      final itemMap = item as Map<String, dynamic>;
-      final content = itemMap['content'] as List<dynamic>? ?? const [];
-      for (final part in content) {
-        final partMap = part as Map<String, dynamic>;
-        if (partMap['type'] == 'output_text') {
-          return partMap['text'] as String? ?? '{}';
-        }
-      }
-    }
-    return '{}';
   }
 
   int _sentiment(dynamic value) {

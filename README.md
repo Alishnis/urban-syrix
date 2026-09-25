@@ -24,7 +24,7 @@ Deployed as two containers on Azure Container Apps (frontend + FastAPI backend),
 
 ## Overview
 
-City infrastructure incidents (fires, traffic accidents, utility works) are reported in real time on a shared map. Residents and builders can add points of interest, leave reviews, and request routes that automatically avoid active accident zones. An OpenAI-backed scoring service evaluates places and the impact of reviews, while two YOLOv8 models run fire and accident detection on uploaded images/video.
+City infrastructure incidents (fires, traffic accidents, utility works) are reported in real time on a shared map. Residents and builders can add points of interest, leave reviews, and request routes that automatically avoid active accident zones. An LLM-backed scoring service (via OpenRouter) evaluates places and the impact of reviews, while two YOLOv8 models run fire and accident detection on uploaded images/video.
 
 ## Architecture
 
@@ -37,14 +37,14 @@ City infrastructure incidents (fires, traffic accidents, utility works) are repo
              ┌────────────────────┼────────────────────┐
              │                    │                    │
    ┌─────────▼─────────┐ ┌────────▼────────┐  ┌────────▼────────┐
-   │      Supabase      │ │   FastAPI       │  │   OpenAI API    │
+   │      Supabase      │ │   FastAPI       │  │   OpenRouter    │
    │ (Auth + Postgres)  │ │   backend       │  │ (place scoring, │
    │                     │ │ (YOLOv8 + ORS)  │  │  review impact) │
    └─────────────────────┘ └─────────────────┘  └─────────────────┘
 ```
 
-- **Flutter Web** renders the map, dashboards, and role-based views, and talks directly to Supabase (auth + Postgres) and to the FastAPI backend for detection/routing.
-- **FastAPI backend** hosts two YOLOv8 models (fire detection, traffic-accident detection) and a safe-routing endpoint backed by OpenRouteService.
+- **Flutter Web** renders the map, dashboards, and role-based views, and talks directly to Supabase (auth + Postgres) and to the FastAPI backend for detection/routing/AI scoring.
+- **FastAPI backend** hosts two YOLOv8 models (fire detection, traffic-accident detection), a safe-routing endpoint backed by OpenRouteService, and a proxy to OpenRouter for AI scoring (keeping that API key server-side only).
 - **Supabase** provides authentication, Postgres storage (`profiles`, `urban_places`, `urban_place_reviews`), and row-level security.
 
 ## Tech stack
@@ -54,17 +54,18 @@ City infrastructure incidents (fires, traffic accidents, utility works) are repo
 | Frontend | Flutter Web, Google Maps SDK |
 | Auth & Database | Supabase (Postgres + Auth + RLS) |
 | Detection backend | FastAPI, Ultralytics YOLOv8, OpenCV |
-| AI scoring | OpenAI API |
+| AI scoring | OpenRouter (`deepseek/deepseek-v4-flash`) |
 | Routing | OpenRouteService API |
 | Deployment | Docker, Docker Compose, Nginx |
 
 ## Features
 
+- Public, read-only map browsing for signed-out visitors — sign-in is only required to add a marker or leave a comment
 - Email/password authentication with role-based access (`resident`, `builder`, `admin`)
 - Map-based reporting of city objects and incidents (`fire`, `car accident`, `other`)
 - Reverse geocoding for reported locations
 - Fire and traffic-accident detection from images/video via on-prem YOLOv8 models
-- AI-assisted scoring of places and review impact via OpenAI
+- AI-assisted scoring of places and review impact via an LLM (proxied through the backend)
 - Safe-route planning that automatically routes around active accident zones
 - Comments and reviews persisted in Supabase with RLS policies
 - Multilingual UI (`EN`, `RU`, `KZ`)
@@ -73,12 +74,13 @@ City infrastructure incidents (fires, traffic accidents, utility works) are repo
 
 ```text
 lib/                    Flutter frontend
-  core/config/           Runtime configuration (Supabase, Maps, OpenAI, API base URL)
+  core/config/           Runtime configuration (Supabase, Maps, detection API base URL)
   features/              auth, dashboard, map, reviews, account, shell
 backend/                 FastAPI backend
   fire_router.py          Fire detection (YOLOv8)
   accident_router.py      Traffic-accident detection (YOLOv8)
   route_router.py          Safe-route planning (OpenRouteService)
+  ai_router.py             AI scoring proxy (OpenRouter)
 modules/                 YOLOv8 weights used by the backend routers
 supabase/                SQL setup scripts (schema, RLS, review system)
 Dockerfile               Multi-stage build: Flutter web -> Nginx
@@ -93,7 +95,7 @@ docker-compose.yml        Runs frontend + backend together
 - Flutter SDK
 - Python 3.10+
 - A Supabase project (Auth enabled)
-- Optional: OpenAI API key, OpenRouteService API key, Google Maps API key
+- Optional: OpenRouter API key, OpenRouteService API key, Google Maps API key
 
 ### 1. Supabase setup
 
@@ -103,6 +105,7 @@ Create a Supabase project and enable email auth, then run the SQL scripts in the
 2. [`supabase/urban_places.sql`](supabase/urban_places.sql)
 3. [`supabase/urban_place_reviews.sql`](supabase/urban_place_reviews.sql)
 4. [`supabase/swipe_review_system.sql`](supabase/swipe_review_system.sql)
+5. [`supabase/allow_anonymous_reads.sql`](supabase/allow_anonymous_reads.sql) — lets signed-out visitors browse the map
 
 Public sign-up only allows `resident` and `builder`. Promote an account to `admin` manually:
 
@@ -125,6 +128,7 @@ Create `backend/.env`:
 
 ```env
 OPENROUTESERVICE_API_KEY=your_openrouteservice_key
+OPENROUTER_API_KEY=your_openrouter_key
 ```
 
 Run it:
@@ -159,8 +163,7 @@ Full local run (detection, routing, AI scoring included):
 flutter run -d chrome \
   --dart-define=SUPABASE_URL=https://your-project.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=your-anon-key \
-  --dart-define=DETECTION_API_BASE_URL=http://localhost:8002 \
-  --dart-define=OPENAI_API_KEY=your-openai-key
+  --dart-define=DETECTION_API_BASE_URL=http://localhost:8002
 ```
 
 Or run as a stable local web server:
@@ -169,8 +172,7 @@ Or run as a stable local web server:
 flutter run -d web-server --web-port 8080 \
   --dart-define=SUPABASE_URL=https://your-project.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=your-anon-key \
-  --dart-define=DETECTION_API_BASE_URL=http://localhost:8002 \
-  --dart-define=OPENAI_API_KEY=your-openai-key
+  --dart-define=DETECTION_API_BASE_URL=http://localhost:8002
 ```
 
 Then open [http://localhost:8080](http://localhost:8080).
@@ -189,7 +191,7 @@ cp .env.example .env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 DETECTION_API_BASE_URL=http://localhost:8002
-OPENAI_API_KEY=your-openai-key
+OPENROUTER_API_KEY=your-openrouter-key
 OPENROUTESERVICE_API_KEY=your-openrouteservice-key
 GOOGLE_MAPS_API_KEY=your-google-maps-key
 ALLOWED_ORIGINS=http://localhost:8080
@@ -204,7 +206,7 @@ docker-compose up -d --build
 - Frontend: [http://localhost:8080](http://localhost:8080) (served by Nginx)
 - Backend: [http://localhost:8002/api/health](http://localhost:8002/api/health)
 
-Frontend build-time configuration (Supabase URL/key, detection API URL, OpenAI key) is baked into the compiled web bundle via `--dart-define`/`ARG` at image build time — rebuild the frontend image whenever these change.
+Frontend build-time configuration (Supabase URL/key, detection API URL) is baked into the compiled web bundle via `--dart-define`/`ARG` at image build time — rebuild the frontend image whenever these change.
 
 ## Environment variables
 
@@ -215,13 +217,13 @@ Frontend build-time configuration (Supabase URL/key, detection API URL, OpenAI k
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_ANON_KEY` | Supabase public client key |
 | `DETECTION_API_BASE_URL` | Base URL of the FastAPI backend |
-| `OPENAI_API_KEY` | Used for place scoring / review impact |
 | `GOOGLE_MAPS_API_KEY` | Optional override of the default Maps key |
 
 **Backend** (runtime, via `backend/.env` or container environment):
 
 | Variable | Purpose |
 |---|---|
+| `OPENROUTER_API_KEY` | Used for place scoring / review impact (via OpenRouter, model `deepseek/deepseek-v4-flash`) |
 | `OPENROUTESERVICE_API_KEY` | Required for safe-route planning |
 | `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (defaults to `*`) |
 
@@ -281,6 +283,6 @@ Both apps scale to zero when idle (`min-replicas 0`) to stay within Azure's free
 
 ## Security notes
 
-- Frontend secrets passed via `--dart-define` are compiled into the client-side JS bundle and are visible to anyone inspecting the deployed site. Treat `SUPABASE_ANON_KEY` and `OPENAI_API_KEY` accordingly — the anon key is designed to be public and relies on Supabase RLS; the OpenAI key is not, and moving OpenAI calls behind the backend (or a Supabase Edge Function) is the recommended hardening step before a public production deploy.
+- Frontend secrets passed via `--dart-define` are compiled into the client-side JS bundle and are visible to anyone inspecting the deployed site. `SUPABASE_ANON_KEY` is designed to be public and relies on Supabase RLS. The OpenRouter key used for AI scoring is not exposed to the client at all — the frontend calls the FastAPI backend (`/api/ai/*`), which holds `OPENROUTER_API_KEY` server-side and proxies the request.
 - `ALLOWED_ORIGINS` defaults to `*` for convenience; set it to your real frontend origin in production.
 - Rotate any API keys that were used during local development/demos before shipping to a public environment.

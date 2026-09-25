@@ -818,6 +818,16 @@ class AppLocalizations {
       AppLanguage.ru: 'Отправить комментарий',
       AppLanguage.kk: 'Пікір жіберу',
     },
+    'sign_in_to_comment': {
+      AppLanguage.en: 'Sign in to leave a comment.',
+      AppLanguage.ru: 'Войдите, чтобы оставить комментарий.',
+      AppLanguage.kk: 'Пікір қалдыру үшін кіріңіз.',
+    },
+    'sign_in': {
+      AppLanguage.en: 'Sign in',
+      AppLanguage.ru: 'Войти',
+      AppLanguage.kk: 'Кіру',
+    },
     'comment_save_failed': {
       AppLanguage.en:
           'Saving the comment failed. Check Supabase reviews setup and try again.',
