@@ -50,8 +50,14 @@ class SupabaseAuthRepository implements AuthRepository {
       data: {'role': role.key},
     );
 
+    // Only create the profile row here if sign-up returned a live session
+    // (i.e. email confirmation is off). When confirmation is required,
+    // `response.session` is null and this request would run as the
+    // unauthenticated `anon` role, which profiles' RLS policies reject.
+    // AuthController._syncProfile already creates the profile as soon as
+    // the user has a real authenticated session, so it's safe to skip here.
     final user = response.user;
-    if (user != null) {
+    if (user != null && response.session != null) {
       await ensureProfile(user: user, role: role);
     }
   }
