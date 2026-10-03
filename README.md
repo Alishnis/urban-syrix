@@ -6,6 +6,8 @@ The project combines a **Flutter Web** client with a **Supabase** backend for au
 
 🔗 **Live demo:** [urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io](https://urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io)
 
+🎥 **Demo video:** [youtu.be/G3gJxva1JoM](https://youtu.be/G3gJxva1JoM)
+
 Deployed as two containers on Azure Container Apps (frontend + FastAPI backend), built from the `Dockerfile`s in this repo. Both scale to zero when idle, so the first request after a period of inactivity may take 10-20s to respond (cold start).
 
 ## Contents

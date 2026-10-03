@@ -154,10 +154,9 @@ class _AuthScreenState extends State<AuthScreen> {
       setState(() {
         _errorText = error.message;
       });
-    } catch (_) {
+    } catch (error) {
       setState(() {
-        _errorText =
-            'Authentication failed. Check Supabase settings and try again.';
+        _errorText = 'Authentication failed: $error';
       });
     }
   }
