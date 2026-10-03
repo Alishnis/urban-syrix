@@ -8,7 +8,7 @@ The project combines a **Flutter Web** client with a **Supabase** backend for au
 
 🎥 **Demo video:**
 
-[![Urban Syrix demo video](https://img.youtube.com/vi/G3gJxva1JoM/maxresdefault.jpg)](https://youtu.be/G3gJxva1JoM)
+[![Urban Syrix demo video](https://img.youtube.com/vi/bxcA9Sg-ogw/maxresdefault.jpg)](https://youtu.be/bxcA9Sg-ogw)
 
 Deployed as two containers on Azure Container Apps (frontend + FastAPI backend), built from the `Dockerfile`s in this repo. Both scale to zero when idle, so the first request after a period of inactivity may take 10-20s to respond (cold start).
 
