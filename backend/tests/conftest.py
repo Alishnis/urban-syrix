@@ -50,6 +50,7 @@ class FakeAsyncClient:
     """Drop-in replacement for httpx.AsyncClient that records POST calls."""
 
     response = FakeResponse(200, {})
+    error: Exception | None = None  # raised by post() to simulate timeouts / connection errors
     calls: list[dict] = []
 
     def __init__(self, *args, **kwargs):
@@ -63,12 +64,20 @@ class FakeAsyncClient:
 
     async def post(self, url, headers=None, json=None, **kwargs):
         type(self).calls.append({"url": url, "headers": headers or {}, "json": json})
+        if type(self).error is not None:
+            raise type(self).error
         return type(self).response
 
 
 @pytest.fixture
 def client():
     return TestClient(main.app)
+
+
+@pytest.fixture
+def client_no_raise():
+    """Like `client`, but unhandled server errors come back as HTTP 500 instead of being re-raised."""
+    return TestClient(main.app, raise_server_exceptions=False)
 
 
 @pytest.fixture
@@ -79,6 +88,7 @@ def fake_http(monkeypatch):
 
     FakeAsyncClient.calls = []
     FakeAsyncClient.response = FakeResponse(200, {})
+    FakeAsyncClient.error = None
     monkeypatch.setattr(route_router.httpx, "AsyncClient", FakeAsyncClient)
     monkeypatch.setattr(ai_router.httpx, "AsyncClient", FakeAsyncClient)
     return FakeAsyncClient

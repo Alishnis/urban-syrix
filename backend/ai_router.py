@@ -27,26 +27,33 @@ async def _call_openrouter(system_text: str, user_text: str, schema: dict[str, A
         "Respond with only a single JSON object (no markdown, no commentary) matching this shape: "
         f"{schema}"
     )
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(
-            OPENROUTER_URL,
-            headers={
-                "Authorization": f"Bearer {_openrouter_key()}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": MODEL,
-                "messages": [
-                    {"role": "system", "content": schema_prompt},
-                    {"role": "user", "content": user_text},
-                ],
-                "response_format": {"type": "json_object"},
-            },
-        )
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {_openrouter_key()}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": MODEL,
+                    "messages": [
+                        {"role": "system", "content": schema_prompt},
+                        {"role": "user", "content": user_text},
+                    ],
+                    "response_format": {"type": "json_object"},
+                },
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="OpenRouter timed out.")
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="OpenRouter is unreachable.")
 
     try:
         payload = response.json()
     except Exception:
+        payload = {"raw": response.text}
+    if not isinstance(payload, dict):
         payload = {"raw": response.text}
 
     if response.status_code >= 400:

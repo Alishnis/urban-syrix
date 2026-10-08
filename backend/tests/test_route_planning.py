@@ -149,3 +149,62 @@ def test_offset_point_moves_the_requested_distance_and_heading():
     assert lon == pytest.approx(76.0, abs=1e-9)
     assert haversine_m(43.0, 76.0, lat, lon) == pytest.approx(1000, abs=0.5)
     assert lat > 43.0
+
+
+def point_in_ring(lon, lat, ring):
+    """Ray-casting point-in-polygon test; ring is a closed list of [lon, lat]."""
+    inside = False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:]):
+        if (y1 > lat) != (y2 > lat) and lon < (x2 - x1) * (lat - y1) / (y2 - y1) + x1:
+            inside = not inside
+    return inside
+
+
+def test_each_avoid_polygon_encloses_its_accident_and_not_the_endpoints(client, fake_http, ors_key):
+    fake_http.response = FakeResponse(200, ORS_OK)
+
+    post_route(client, avoid_points=[ACCIDENT_A, ACCIDENT_B], avoid_radius_m=100)
+
+    polygons = fake_http.calls[0]["json"]["options"]["avoid_polygons"]["coordinates"]
+    for polygon, zone in zip(polygons, [ACCIDENT_A, ACCIDENT_B]):
+        (ring,) = polygon
+        assert point_in_ring(zone["longitude"], zone["latitude"], ring)
+        for endpoint in (ORIGIN, DESTINATION):  # the trip must still be able to start and end
+            assert not point_in_ring(endpoint["longitude"], endpoint["latitude"], ring)
+
+
+def test_many_accidents_all_become_avoid_polygons_in_order(client, fake_http, ors_key):
+    fake_http.response = FakeResponse(200, ORS_OK)
+    zones = [{"latitude": 43.24 + i * 0.001, "longitude": 76.90} for i in range(5)]
+
+    resp = post_route(client, avoid_points=zones)
+
+    assert resp.json()["avoided_points"] == 5
+    polygons = fake_http.calls[0]["json"]["options"]["avoid_polygons"]["coordinates"]
+    assert len(polygons) == 5
+    centres = [sum(lat for _, lat in p[0][:-1]) / 16 for p in polygons]
+    assert centres == pytest.approx([z["latitude"] for z in zones], abs=1e-6)
+
+
+def test_route_returned_by_ors_is_passed_through_unchanged(client, fake_http, ors_key):
+    detour = [[76.8897, 43.2389], [76.895, 43.2500], [76.920, 43.2550], [76.9286, 43.2567]]
+    fake_http.response = FakeResponse(
+        200, {"features": [{"geometry": {"coordinates": detour}, "properties": {"summary": {"distance": 5200, "duration": 700}}}]}
+    )
+
+    resp = post_route(client, avoid_points=[ACCIDENT_A])
+
+    assert resp.json()["coordinates"] == detour
+    assert resp.json()["distance_m"] == 5200
+
+
+def test_out_of_range_coordinates_are_not_checked_locally_the_upstream_error_is_returned(client, fake_http, ors_key):
+    fake_http.response = FakeResponse(
+        400, {"error": {"code": 2010, "message": "Coordinate out of range: latitude must be within -90..90"}}
+    )
+
+    resp = post_route(client, origin={"latitude": 999, "longitude": 76.9})
+
+    assert resp.status_code == 400
+    assert "out of range" in resp.json()["detail"]
+    assert fake_http.calls[0]["json"]["coordinates"][0] == [76.9, 999]

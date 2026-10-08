@@ -110,19 +110,26 @@ async def safe_route(payload: SafeRouteRequest):
     if avoid_polygons is not None:
         body["options"] = {"avoid_polygons": avoid_polygons}
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(
-            ORS_URL,
-            headers={
-                "Authorization": _ors_key(),
-                "Content-Type": "application/json",
-            },
-            json=body,
-        )
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                ORS_URL,
+                headers={
+                    "Authorization": _ors_key(),
+                    "Content-Type": "application/json",
+                },
+                json=body,
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="OpenRouteService timed out.")
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="OpenRouteService is unreachable.")
 
     try:
         data = response.json()
     except Exception:
+        data = {"raw": response.text}
+    if not isinstance(data, dict):
         data = {"raw": response.text}
 
     if response.status_code >= 400:

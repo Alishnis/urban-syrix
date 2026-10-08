@@ -2,21 +2,21 @@
 
 A smart-city map where residents, builders and city administrators report incidents, review places, and get safe routes that avoid active accident zones. Fire and traffic-accident detection (YOLOv8) and LLM-based place scoring run in a FastAPI backend behind the Flutter web app.
 
+## My role
+
+I am **Alisher Romankul, co-founder of Urban Syrix**, and I built the **entire backend** (`backend/`): the FastAPI detection and routing services and their integrations with third-party platforms (OpenRouteService for safe routing, OpenRouter for AI scoring).
+
+This repository is my fork (`Alishnis/urban-syrix`) of a teammate's repository, [shamanx64/hackathon_net](https://github.com/shamanx64/hackathon_net). The Flutter client and Supabase SQL are part of the same team project.
+
+<!-- TODO(owner): add your teammates' roles and how they want to be credited; only your own role is documented here. -->
+
 **Live demo:** [urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io](https://urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io) (hosted on Azure Container Apps and scaled to zero when idle, so the first request after a quiet period can take 10-20 s)
 
-**Demo video:**
+**Demo video:** [youtu.be/bxcA9Sg-ogw](https://youtu.be/bxcA9Sg-ogw)
 
 [![Urban Syrix demo video](https://img.youtube.com/vi/bxcA9Sg-ogw/maxresdefault.jpg)](https://youtu.be/bxcA9Sg-ogw)
 
 <!-- TODO(owner): add 2-3 screenshots (map, incident report, safe route) under docs/images/ and embed them here. -->
-
-## My role
-
-Urban Syrix is a team project built for a hackathon. **I am a co-founder and built the entire backend** (`backend/`): the FastAPI service, the fire / traffic-accident detection endpoints around the YOLOv8 models, the safe-route planner on top of OpenRouteService, the OpenRouter proxy for AI scoring, the Docker packaging and the Azure Container Apps deployment. I also contributed to the Flutter client (Supabase auth with roles, role-gated map points, map interactions).
-
-The git history shows the split: every line of `backend/*.py` is authored by my commit identities (`Алишер Романкул` / `alishnis`), apart from a single one-line change by a teammate. The Flutter UI was started by teammates: `RandomnieBukvi` (initial app, map, responsive layout) and `Shynggys Kurumbayev` (swipe-review flow, moderation UI, dotenv loading).
-
-<!-- TODO(owner): this repo was forked from a teammate's repository; add the upstream URL here and confirm how teammates want to be credited. -->
 
 ## Features
 
@@ -71,16 +71,16 @@ All endpoints are under the base URL of the backend (default `http://localhost:8
 | Method and path | Request | Response |
 |---|---|---|
 | `GET /api/health` | - | `{"status": "ok"}` |
-| `POST /api/fire/analyze` | multipart: `file` (video), `sensitivity` (float, default `0.4`, clamped to 0.1-0.9) | `{"fire_detected": bool, "stats": {frames_total, frames_processed, frames_with_fire, max_confidence, best_frame_confidence, preview_name, best_box, threshold}}` |
-| `POST /api/fire/analyze-image` | multipart: `file` (image), `sensitivity` (default `0.4`) | `{"fire_detected": bool, "stats": {max_confidence, preview_name, best_box, threshold}}` |
+| `POST /api/fire/analyze` | multipart: `file` (video), `sensitivity` (float, default `0.4`, clamped to 0.1-0.9) | `{"fire_detected": bool, "stats": {frames_total, frames_processed, frames_with_fire, max_confidence, best_frame_confidence, preview_name, best_box, video_name, threshold}}` (`video_name` is always `null`) |
+| `POST /api/fire/analyze-image` | multipart: `file` (image), `sensitivity` (default `0.4`, clamped to 0.1-0.9) | `{"fire_detected": bool, "stats": {max_confidence, preview_name, best_box, threshold}}` |
 | `POST /api/accident/analyze-image` | multipart: `file` (image), `sensitivity` (default `0.2`, clamped to 0.05-0.9) | `{"accident_detected": bool, "stats": {vehicles_count, accident_boxes, max_confidence, preview_name, best_box, threshold}}` |
-| `POST /api/accident/analyze-video` | multipart: `file` (video), `sensitivity` | `{"accident_detected": bool, "stats": {frames_total, frames_processed, frames_with_accident, max_confidence, preview_name, best_box, threshold}}` |
-| `GET /api/fire/preview/{name}`, `GET /api/accident/preview/{name}` | `name` = `preview_name` from the stats | annotated JPEG, or `404` |
+| `POST /api/accident/analyze-video` | multipart: `file` (video), `sensitivity` (default `0.2`, clamped to 0.05-0.9) | `{"accident_detected": bool, "stats": {frames_total, frames_processed, frames_with_accident, max_confidence, preview_name, best_box, threshold}}` |
+| `GET /api/fire/preview/{name}`, `GET /api/accident/preview/{name}` | `name` = `preview_name` from the stats | annotated JPEG, or `404` `{"detail": "Preview not found."}` |
 | `POST /api/route/safe-route` | JSON, see below | route geometry |
 | `POST /api/ai/place-analysis` | JSON: `name`, `type_label`, `incident_subtype_label?`, `address`, `description` | `{"output_text": "<JSON string with description and 0-100 scores>"}` |
 | `POST /api/ai/review-impact` | JSON: `place_name`, `place_type_label`, `place_address`, `place_description`, `selected_category_label`, `message` | `{"output_text": "<JSON string: sentiment and -12..12 impact per category>"}` |
 
-`best_box` is `{"x1", "y1", "x2", "y2", "region"}` in pixels, where `region` is a 3x3 position label such as `middle-center`.
+`best_box` is `{"x1", "y1", "x2", "y2", "region"}` in pixels, where `region` is a 3x3 position label such as `middle-center`, or `null` when nothing was detected. An upload that has the right type but cannot be decoded (corrupt image, unreadable video) is not an error: the response is `200` with `*_detected: false` and a reduced `stats` object (some keys above are absent). Videos are sampled every 5th frame and reading stops after 300 frames.
 
 **Safe route**
 
@@ -90,18 +90,29 @@ All endpoints are under the base URL of the backend (default `http://localhost:8
   "origin":      {"latitude": 43.2389, "longitude": 76.8897},
   "destination": {"latitude": 43.2567, "longitude": 76.9286},
   "avoid_points": [{"latitude": 43.245, "longitude": 76.90}],  // optional accident locations
-  "avoid_radius_m": 50                                          // optional, clamped to 10-200
+  "avoid_radius_m": 50                                          // optional, default 50, clamped to 10-200
 }
 // 200 response
 {
   "coordinates": [[76.8897, 43.2389], ...],   // [longitude, latitude] pairs
-  "distance_m": 4321.5,
-  "duration_s": 612.0,
-  "avoided_points": 1
+  "distance_m": 4321.5,                        // null if ORS returns no summary
+  "duration_s": 612.0,                         // null if ORS returns no summary
+  "avoided_points": 1                          // number of avoid_points sent
 }
 ```
 
-Error handling: an invalid JSON body or missing form field returns `422`; an upload that is not an image/video (as the endpoint requires) returns `400`; upstream OpenRouteService / OpenRouter errors are returned as `400` with the upstream message; a missing server-side API key returns `500`.
+Latitude and longitude only have to be numbers; their ranges are not checked by the backend, so out-of-range values are rejected by OpenRouteService and come back as `400`.
+
+**Error responses** (body is `{"detail": ...}`)
+
+| Status | When |
+|---|---|
+| `400` | Uploaded file is neither the expected type nor has an allowed extension (`Please upload an image file.` / `Please upload a video file.`); OpenRouteService / OpenRouter answered with an HTTP error (any 4xx or 5xx), in which case `detail` is the upstream message; OpenRouteService returned no route geometry |
+| `404` | Preview image does not exist |
+| `422` | Request body or form fields are missing or have the wrong type (FastAPI validation, including a non-numeric `sensitivity`) |
+| `500` | `OPENROUTESERVICE_API_KEY` / `OPENROUTER_API_KEY` is not configured on the server; a YOLO weights file is missing or inference fails (generic `Internal Server Error`) |
+| `502` | OpenRouteService / OpenRouter could not be reached (connection error) |
+| `504` | OpenRouteService / OpenRouter timed out (30 s) |
 
 ### Supabase (`supabase/`)
 
@@ -208,7 +219,7 @@ docker-compose.yml        frontend + backend
 
 ## Testing
 
-Backend (no models or network needed; `ultralytics` is stubbed and OpenRouteService / OpenRouter calls are mocked):
+Backend (no model weights or network needed; `ultralytics` is stubbed, YOLO models are replaced by fakes, and OpenRouteService / OpenRouter calls are mocked):
 
 ```bash
 cd backend
@@ -217,7 +228,13 @@ ruff check .
 pytest
 ```
 
-The suite covers: route planning around accident zones (avoid-polygon geometry and radius clamping, request body sent to OpenRouteService, upstream-error and missing-key handling), request validation for every endpoint, the OpenRouter proxy, upload type checks and sensitivity clamping, CORS configuration, and regressions for two bugs (path-like upload filenames and directory preview lookups returning `500`).
+The suite (`backend/tests/`) covers:
+
+- **Route planning around accident zones:** each accident becomes a closed circular avoid-polygon (checked for radius, closure, and that it encloses the accident but not the trip endpoints) in the `avoid_polygons` option sent to OpenRouteService; radius clamping; the returned route is passed through unchanged.
+- **Request validation** on every endpoint: malformed or missing JSON fields, non-numeric values, wrong or missing upload types (images vs. videos, unknown extensions), non-numeric `sensitivity`, sensitivity clamping.
+- **External-service failures:** OpenRouteService and OpenRouter timeouts (`504`), connection errors (`502`), 4xx/5xx responses with JSON, HTML or empty bodies (`400` with the upstream message), 200 responses with invalid JSON or no usable content, and a missing or blank API key (`500`), all without any real network call.
+- **YOLO detection with a mocked model:** the real OpenCV code runs against fake model output (thresholds, region labels, vehicle counts, frame sampling on a generated video, preview files); model inference errors and missing weights return `500`, clean up the upload and leave the server responsive.
+- CORS configuration, and regressions for two bugs (path-like upload filenames and directory preview lookups returning `500`).
 
 Frontend: `flutter test` runs one widget test (the "Supabase is not configured" screen); `flutter analyze` reports two deprecation infos.
 
@@ -230,7 +247,7 @@ Frontend: `flutter test` runs one widget test (the "Supabase is not configured" 
 
 ## Limitations
 
-- Hackathon-grade project: backend tests cover the routing, validation and proxy logic; the Flutter client has one widget test and the YOLO inference path is not covered by automated tests.
+- Hackathon-grade project: backend tests cover routing, validation, proxy and detection plumbing with mocked models and services; the real YOLO weights and the live third-party APIs are not exercised by automated tests, and the Flutter client has one widget test.
 - Detection accuracy has not been evaluated in this repo, and the training data and licence of the weights in `modules/` are not documented here. Treat results as a demo, not as a safety system.
 - Safe routing only avoids circular zones around reported points (10-200 m) for driving routes; it does not check the zones' freshness or resolve incidents.
 - The backend is unauthenticated: anyone who can reach it can use the detection, routing and LLM endpoints. Uploads have no size limit and preview images in `backend/tmp/` are not cleaned up.
