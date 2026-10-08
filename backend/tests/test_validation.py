@@ -25,6 +25,10 @@ def test_health(client):
         {"origin": VALID_POINT, "destination": VALID_POINT, "avoid_points": "nope"},  # wrong type
         {"origin": VALID_POINT, "destination": VALID_POINT, "avoid_points": [{"latitude": 1}]},
         {"origin": VALID_POINT, "destination": VALID_POINT, "avoid_radius_m": "wide"},
+        {"origin": None, "destination": VALID_POINT},  # null instead of an object
+        {"origin": {"latitude": None, "longitude": 1}, "destination": VALID_POINT},  # null coordinate
+        {"origin": [43.24, 76.89], "destination": VALID_POINT},  # array instead of an object
+        {"origin": VALID_POINT, "destination": VALID_POINT, "avoid_points": [None]},
     ],
 )
 def test_safe_route_rejects_malformed_bodies(client, fake_http, ors_key, body):
@@ -37,6 +41,13 @@ def test_safe_route_rejects_malformed_bodies(client, fake_http, ors_key, body):
 def test_safe_route_rejects_non_json_body(client, fake_http, ors_key):
     resp = client.post("/api/route/safe-route", content="not json", headers={"content-type": "application/json"})
     assert resp.status_code == 422
+
+
+def test_safe_route_validation_error_names_the_missing_field(client, fake_http, ors_key):
+    resp = client.post("/api/route/safe-route", json={"origin": VALID_POINT})
+
+    assert resp.status_code == 422
+    assert resp.json()["detail"][0]["loc"] == ["body", "destination"]
 
 
 # --- /api/ai/* -------------------------------------------------------------
@@ -143,6 +154,43 @@ def test_upload_endpoints_reject_wrong_file_type(client, url, kind):
 
     assert resp.status_code == 400
     assert f"Please upload a{'n' if kind == 'image' else ''} {kind} file." == resp.json()["detail"]
+
+
+@pytest.mark.parametrize("url, kind", UPLOAD_ENDPOINTS)
+@pytest.mark.parametrize(
+    "name, content_type",
+    [
+        ("report.pdf", "application/pdf"),
+        ("archive.zip", "application/zip"),
+        ("script.py", "text/x-python"),
+        ("noextension", "application/octet-stream"),
+        ("data.json", ""),  # no content type, unknown extension
+    ],
+)
+def test_upload_endpoints_reject_other_file_types(client, url, kind, name, content_type):
+    resp = client.post(url, files={"file": (name, b"payload", content_type)})
+
+    assert resp.status_code == 400
+
+
+@pytest.mark.parametrize(
+    "url, name, content_type",
+    [
+        ("/api/fire/analyze-image", "clip.mp4", "video/mp4"),  # video sent to an image endpoint
+        ("/api/accident/analyze-image", "clip.mov", "video/quicktime"),
+        ("/api/fire/analyze", "photo.jpg", "image/jpeg"),  # image sent to a video endpoint
+        ("/api/accident/analyze-video", "photo.png", "image/png"),
+    ],
+)
+def test_images_and_videos_are_not_interchangeable(client, url, name, content_type):
+    assert client.post(url, files={"file": (name, b"payload", content_type)}).status_code == 400
+
+
+@pytest.mark.parametrize("url", ["/api/fire/analyze-image", "/api/accident/analyze-image"])
+def test_non_numeric_sensitivity_is_rejected(client, url):
+    resp = client.post(url, files={"file": ("a.jpg", b"x", "image/jpeg")}, data={"sensitivity": "high"})
+
+    assert resp.status_code == 422
 
 
 @pytest.mark.parametrize("url, kind", UPLOAD_ENDPOINTS)
