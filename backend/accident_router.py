@@ -36,7 +36,11 @@ VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
 def _get_vehicle_model():
     global _vehicle_model
     if _vehicle_model is None:
-        _vehicle_model = YOLO("yolov8n.pt")
+        # Prefer the copy shipped next to this file so the app also works when
+        # started from another working directory (otherwise ultralytics would
+        # try to download the weights).
+        local_weights = BASE_DIR / "yolov8n.pt"
+        _vehicle_model = YOLO(str(local_weights) if local_weights.exists() else "yolov8n.pt")
     return _vehicle_model
 
 
@@ -51,6 +55,11 @@ def _get_accident_model():
         if _accident_model is None:
             raise FileNotFoundError(f"No accident model found in {WEIGHTS_DIR}")
     return _accident_model
+
+
+def _safe_filename(filename: str | None) -> str:
+    """Strip any directory components from a client-supplied filename."""
+    return Path(filename or "upload").name or "upload"
 
 
 def _has_allowed_extension(filename: str | None, allowed: set[str]) -> bool:
@@ -165,7 +174,7 @@ def _detect_accident_image(image_path: Path, conf_threshold: float = 0.2):
 
 
 def _detect_accident_video(video_path: Path, conf_threshold: float = 0.2):
-    vehicle_model = _get_vehicle_model()
+    # Vehicle detection is intentionally skipped for video (speed), so only the accident model is loaded.
     accident_model = _get_accident_model()
 
     cap = cv2.VideoCapture(str(video_path))
@@ -273,7 +282,7 @@ async def analyze_image(file: UploadFile = File(...), sensitivity: float = Form(
 
     tmp_dir = BASE_DIR / "tmp" / "accident_uploads"
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    tmp_path = tmp_dir / f"{uuid4().hex}_{file.filename}"
+    tmp_path = tmp_dir / f"{uuid4().hex}_{_safe_filename(file.filename)}"
     conf = max(0.05, min(sensitivity, 0.9))
 
     try:
@@ -296,7 +305,7 @@ async def analyze_video(file: UploadFile = File(...), sensitivity: float = Form(
 
     tmp_dir = BASE_DIR / "tmp" / "accident_uploads"
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    tmp_path = tmp_dir / f"{uuid4().hex}_{file.filename}"
+    tmp_path = tmp_dir / f"{uuid4().hex}_{_safe_filename(file.filename)}"
     conf = max(0.05, min(sensitivity, 0.9))
 
     try:
@@ -312,6 +321,6 @@ async def analyze_video(file: UploadFile = File(...), sensitivity: float = Form(
 @router.get("/preview/{filename}")
 async def get_preview(filename: str):
     path = PREVIEW_DIR / filename
-    if not path.exists():
+    if not path.is_file():
         raise HTTPException(status_code=404, detail="Preview not found.")
     return FileResponse(path, media_type="image/jpeg")
