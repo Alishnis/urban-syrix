@@ -2,21 +2,21 @@
 
 A smart-city map where residents, builders and city administrators report incidents, review places, and get safe routes that avoid active accident zones. Fire and traffic-accident detection (YOLOv8) and LLM-based place scoring run in a FastAPI backend behind the Flutter web app.
 
+## My role
+
+I am **Alisher Romankul, co-founder of Urban Syrix**, and I built the **entire backend** (`backend/`): the FastAPI detection and routing services and their integrations with third-party platforms (OpenRouteService for safe routing, OpenRouter for AI scoring).
+
+This repository is my fork (`Alishnis/urban-syrix`) of a teammate's repository, [shamanx64/hackathon_net](https://github.com/shamanx64/hackathon_net). The Flutter client and Supabase SQL are part of the same team project.
+
+<!-- TODO(owner): add your teammates' roles and how they want to be credited; only your own role is documented here. -->
+
 **Live demo:** [urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io](https://urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io) (hosted on Azure Container Apps and scaled to zero when idle, so the first request after a quiet period can take 10-20 s)
 
-**Demo video:**
+**Demo video:** [youtu.be/bxcA9Sg-ogw](https://youtu.be/bxcA9Sg-ogw)
 
 [![Urban Syrix demo video](https://img.youtube.com/vi/bxcA9Sg-ogw/maxresdefault.jpg)](https://youtu.be/bxcA9Sg-ogw)
 
 <!-- TODO(owner): add 2-3 screenshots (map, incident report, safe route) under docs/images/ and embed them here. -->
-
-## My role
-
-Urban Syrix is a team project built for a hackathon. **I am a co-founder and built the entire backend** (`backend/`): the FastAPI service, the fire / traffic-accident detection endpoints around the YOLOv8 models, the safe-route planner on top of OpenRouteService, the OpenRouter proxy for AI scoring, the Docker packaging and the Azure Container Apps deployment. I also contributed to the Flutter client (Supabase auth with roles, role-gated map points, map interactions).
-
-The git history shows the split: every line of `backend/*.py` is authored by my commit identities (`Алишер Романкул` / `alishnis`), apart from a single one-line change by a teammate. The Flutter UI was started by teammates: `RandomnieBukvi` (initial app, map, responsive layout) and `Shynggys Kurumbayev` (swipe-review flow, moderation UI, dotenv loading).
-
-<!-- TODO(owner): this repo was forked from a teammate's repository; add the upstream URL here and confirm how teammates want to be credited. -->
 
 ## Features
 
