@@ -25,7 +25,10 @@ services:
         SUPABASE_URL: ${SUPABASE_URL}
         SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
         DETECTION_API_BASE_URL: ${DETECTION_API_BASE_URL}
-        OPENAI_API_KEY: ${OPENROUTER_API_KEY}
+        # The frontend only needs to know *whether* AI scoring is enabled (the
+        # call itself is proxied by the backend). Never bake the real key into
+        # the client bundle: pass a non-secret marker instead.
+        OPENAI_API_KEY: ${OPENROUTER_API_KEY:+backend-proxied}
         GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
     ports:
       - "8080:80"

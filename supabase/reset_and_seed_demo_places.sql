@@ -18,7 +18,7 @@ declare
 begin
   select id into v_user_id
   from auth.users
-  where email = 'dilnaz.romankul@zimran.io'  -- <-- change if needed
+  where email = 'admin@example.com'  -- <-- REPLACE with your own admin account email
   limit 1;
 
   if v_user_id is null then

@@ -34,7 +34,10 @@ migrate_working_dir/
 /build/
 env.json
 .env
+.env.*
+!.env.example
 .codex/
+.claude/
 
 # Symbolication related
 app.*.symbols
@@ -51,4 +54,7 @@ app.*.map.json
 /backend/.env
 /backend/tmp/
 /backend/.venv/
-/backend/__pycache__/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/

@@ -18,3 +18,10 @@ backend/tmp/
 backend/.env
 
 .env
+backend/tests/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/pytest.ini
+backend/ruff.toml
+backend/requirements-test.txt
+.github/

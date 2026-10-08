@@ -36,6 +36,11 @@ def _get_model():
     return _model
 
 
+def _safe_filename(filename: str | None) -> str:
+    """Strip any directory components from a client-supplied filename."""
+    return Path(filename or "upload").name or "upload"
+
+
 def _has_allowed_extension(filename: str | None, allowed: set[str]) -> bool:
     if not filename:
         return False
@@ -231,7 +236,7 @@ async def analyze_video(file: UploadFile = File(...), sensitivity: float = Form(
 
     tmp_dir = BASE_DIR / "tmp" / "fire_uploads"
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    tmp_path = tmp_dir / f"{uuid4().hex}_{file.filename}"
+    tmp_path = tmp_dir / f"{uuid4().hex}_{_safe_filename(file.filename)}"
     conf = max(0.1, min(sensitivity, 0.9))
 
     try:
@@ -254,7 +259,7 @@ async def analyze_image(file: UploadFile = File(...), sensitivity: float = Form(
 
     tmp_dir = BASE_DIR / "tmp" / "fire_uploads"
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    tmp_path = tmp_dir / f"{uuid4().hex}_{file.filename}"
+    tmp_path = tmp_dir / f"{uuid4().hex}_{_safe_filename(file.filename)}"
     conf = max(0.1, min(sensitivity, 0.9))
 
     try:
@@ -270,6 +275,6 @@ async def analyze_image(file: UploadFile = File(...), sensitivity: float = Form(
 @router.get("/preview/{filename}")
 async def get_preview(filename: str):
     path = PREVIEW_DIR / filename
-    if not path.exists():
+    if not path.is_file():
         raise HTTPException(status_code=404, detail="Preview not found.")
     return FileResponse(path, media_type="image/jpeg")

@@ -11,7 +11,10 @@ from fire_router import router as fire_router
 from route_router import router as route_router
 
 BASE_DIR = Path(__file__).resolve().parent
+# Variables already set in the environment win; then the project-root .env
+# (used by docker-compose / this repo's .env.example), then backend/.env.
 load_dotenv(BASE_DIR.parent / ".env")
+load_dotenv(BASE_DIR / ".env")
 
 app = FastAPI(title="urban syrix detection backend", version="1.0.0")
 

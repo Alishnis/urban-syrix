@@ -3,8 +3,5 @@ uvicorn[standard]
 python-multipart
 ultralytics
 opencv-python
-openai
 python-dotenv
 httpx
-supabase
-openai
