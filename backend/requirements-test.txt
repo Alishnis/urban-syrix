@@ -1,0 +1,10 @@
+# Minimal dependencies to lint and test the backend without the heavy
+# ML stack (ultralytics/torch). tests/conftest.py stubs `ultralytics` when it
+# is not installed; no model weights are loaded and no external API is called.
+fastapi
+httpx
+python-dotenv
+python-multipart
+opencv-python-headless
+pytest
+ruff
