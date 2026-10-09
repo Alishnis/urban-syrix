@@ -10,7 +10,7 @@ This repository is my fork (`Alishnis/urban-syrix`) of a teammate's repository, 
 
 <!-- TODO(owner): add your teammates' roles and how they want to be credited; only your own role is documented here. -->
 
-**Live demo:** [urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io](https://urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io) (hosted on Azure Container Apps and scaled to zero when idle, so the first request after a quiet period can take 10-20 s)
+**Live demo:** offline for now (the Azure student credit that hosted it ran out). Demo video: https://youtu.be/bxcA9Sg-ogw
 
 **Demo video:** [youtu.be/bxcA9Sg-ogw](https://youtu.be/bxcA9Sg-ogw)
 
@@ -128,7 +128,7 @@ SQL scripts for the tables `profiles`, `urban_places`, `urban_place_reviews`, `r
 | Computer vision | Ultralytics YOLOv8, OpenCV |
 | AI scoring | OpenRouter (`deepseek/deepseek-v4-flash`) |
 | Routing | OpenRouteService (driving-car, `avoid_polygons`) |
-| Packaging and hosting | Docker, Docker Compose, Nginx, Azure Container Apps |
+| Packaging and hosting | Docker, Docker Compose, Nginx (Azure Container Apps was the former host) |
 | Backend tests and CI | pytest, FastAPI TestClient, ruff, GitHub Actions |
 
 ## Quick start
@@ -185,6 +185,10 @@ docker compose up --build
 
 Frontend at http://localhost:8080 (Nginx), backend at http://localhost:8002/api/health. Frontend values are baked into the web bundle at image build time, so rebuild the frontend image after changing them.
 
+## Deployment
+
+The live demo is offline (see the top of this README). Run it locally with Docker Compose or the manual setup above; see [docs/DEPLOY.md](docs/DEPLOY.md). `Dockerfile`, `backend/Dockerfile` and `nginx.conf` are kept as reference for the former Azure deployment.
+
 ## Configuration
 
 Copy `.env.example` to `.env` (gitignored). Variables marked "frontend" are compile-time values that end up in the public JS bundle, so never put a secret there.
@@ -211,7 +215,7 @@ backend/                  FastAPI service (detection, routing, AI proxy)
 modules/                  YOLOv8 weights: fire-detection/, traffic-accident-detection/
 lib/                      Flutter app (core/config, features/{auth,map,reviews,dashboard,account,public,shell})
 supabase/                 SQL schema, RLS, RPCs, demo seed data
-docs/                     notes on the swipe-review rollout
+docs/                     DEPLOY.md (running it), notes on the swipe-review rollout
 Dockerfile, nginx.conf    Flutter web build -> Nginx image
 docker-compose.yml        frontend + backend
 .github/workflows/ci.yml  backend lint + tests
