@@ -10,7 +10,7 @@ This repository is my fork (`Alishnis/urban-syrix`) of a teammate's repository, 
 
 <!-- TODO(owner): add your teammates' roles and how they want to be credited; only your own role is documented here. -->
 
-**Live demo:** [urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io](https://urbansyr-frontend.politewave-c26ab3bd.germanywestcentral.azurecontainerapps.io) (hosted on Azure Container Apps and scaled to zero when idle, so the first request after a quiet period can take 10-20 s)
+**Live demo:** TODO(owner): add the GitHub Pages URL (`https://alishnis.github.io/urban-syrix/`) once the deploy workflow has run; backend: TODO(owner): add the Hugging Face Space URL. The Space sleeps after about 48 h idle and wakes in about a minute, so the first request can be slow. (The earlier Azure Container Apps deployment is legacy and not maintained.)
 
 **Demo video:** [youtu.be/bxcA9Sg-ogw](https://youtu.be/bxcA9Sg-ogw)
 
@@ -128,7 +128,7 @@ SQL scripts for the tables `profiles`, `urban_places`, `urban_place_reviews`, `r
 | Computer vision | Ultralytics YOLOv8, OpenCV |
 | AI scoring | OpenRouter (`deepseek/deepseek-v4-flash`) |
 | Routing | OpenRouteService (driving-car, `avoid_polygons`) |
-| Packaging and hosting | Docker, Docker Compose, Nginx, Azure Container Apps |
+| Packaging and hosting | Docker, Docker Compose, Nginx; free hosting on Hugging Face Spaces (backend) and GitHub Pages (frontend); Azure Container Apps is legacy |
 | Backend tests and CI | pytest, FastAPI TestClient, ruff, GitHub Actions |
 
 ## Quick start
@@ -185,6 +185,10 @@ docker compose up --build
 
 Frontend at http://localhost:8080 (Nginx), backend at http://localhost:8002/api/health. Frontend values are baked into the web bundle at image build time, so rebuild the frontend image after changing them.
 
+## Deployment
+
+Free hosting, deployed from `main` by GitHub Actions: the FastAPI backend runs on a Hugging Face Space (Docker SDK, `.github/workflows/deploy-hf-space.yml`) and the Flutter web app on GitHub Pages (`.github/workflows/deploy-pages.yml`). Both workflows skip cleanly until their secrets/variables are set. Step-by-step owner setup (tokens, Space secrets, CORS, Pages), the cold-start note and a client-bundle caveat are in [docs/DEPLOY.md](docs/DEPLOY.md). The Azure setup (`Dockerfile`, `nginx.conf`, `docker-compose.yml`) is kept for local Docker use and is legacy as a hosting target.
+
 ## Configuration
 
 Copy `.env.example` to `.env` (gitignored). Variables marked "frontend" are compile-time values that end up in the public JS bundle, so never put a secret there.
@@ -211,10 +215,11 @@ backend/                  FastAPI service (detection, routing, AI proxy)
 modules/                  YOLOv8 weights: fire-detection/, traffic-accident-detection/
 lib/                      Flutter app (core/config, features/{auth,map,reviews,dashboard,account,public,shell})
 supabase/                 SQL schema, RLS, RPCs, demo seed data
-docs/                     notes on the swipe-review rollout
+docs/                     DEPLOY.md (free hosting), notes on the swipe-review rollout
+scripts/                  stage_hf_space.py (lays out the Hugging Face Space folder)
 Dockerfile, nginx.conf    Flutter web build -> Nginx image
 docker-compose.yml        frontend + backend
-.github/workflows/ci.yml  backend lint + tests
+.github/workflows/       ci.yml (backend lint + tests), deploy-hf-space.yml, deploy-pages.yml
 ```
 
 ## Testing
