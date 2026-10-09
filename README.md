@@ -10,7 +10,7 @@ This repository is my fork (`Alishnis/urban-syrix`) of a teammate's repository, 
 
 <!-- TODO(owner): add your teammates' roles and how they want to be credited; only your own role is documented here. -->
 
-**Live demo:** TODO(owner): add the GitHub Pages URL (`https://alishnis.github.io/urban-syrix/`) once the deploy workflow has run; backend: TODO(owner): add the Hugging Face Space URL. The Space sleeps after about 48 h idle and wakes in about a minute, so the first request can be slow. (The earlier Azure Container Apps deployment is legacy and not maintained.)
+**Live demo:** offline for now (the Azure student credit that hosted it ran out). Demo video: https://youtu.be/bxcA9Sg-ogw
 
 **Demo video:** [youtu.be/bxcA9Sg-ogw](https://youtu.be/bxcA9Sg-ogw)
 
@@ -128,7 +128,7 @@ SQL scripts for the tables `profiles`, `urban_places`, `urban_place_reviews`, `r
 | Computer vision | Ultralytics YOLOv8, OpenCV |
 | AI scoring | OpenRouter (`deepseek/deepseek-v4-flash`) |
 | Routing | OpenRouteService (driving-car, `avoid_polygons`) |
-| Packaging and hosting | Docker, Docker Compose, Nginx; free hosting on Hugging Face Spaces (backend) and GitHub Pages (frontend); Azure Container Apps is legacy |
+| Packaging and hosting | Docker, Docker Compose, Nginx (Azure Container Apps was the former host) |
 | Backend tests and CI | pytest, FastAPI TestClient, ruff, GitHub Actions |
 
 ## Quick start
@@ -187,7 +187,7 @@ Frontend at http://localhost:8080 (Nginx), backend at http://localhost:8002/api/
 
 ## Deployment
 
-Free hosting, deployed from `main` by GitHub Actions: the FastAPI backend runs on a Hugging Face Space (Docker SDK, `.github/workflows/deploy-hf-space.yml`) and the Flutter web app on GitHub Pages (`.github/workflows/deploy-pages.yml`). Both workflows skip cleanly until their secrets/variables are set. Step-by-step owner setup (tokens, Space secrets, CORS, Pages), the cold-start note and a client-bundle caveat are in [docs/DEPLOY.md](docs/DEPLOY.md). The Azure setup (`Dockerfile`, `nginx.conf`, `docker-compose.yml`) is kept for local Docker use and is legacy as a hosting target.
+The live demo is offline (see the top of this README). Run it locally with Docker Compose or the manual setup above; see [docs/DEPLOY.md](docs/DEPLOY.md). `Dockerfile`, `backend/Dockerfile` and `nginx.conf` are kept as reference for the former Azure deployment.
 
 ## Configuration
 
@@ -215,11 +215,10 @@ backend/                  FastAPI service (detection, routing, AI proxy)
 modules/                  YOLOv8 weights: fire-detection/, traffic-accident-detection/
 lib/                      Flutter app (core/config, features/{auth,map,reviews,dashboard,account,public,shell})
 supabase/                 SQL schema, RLS, RPCs, demo seed data
-docs/                     DEPLOY.md (free hosting), notes on the swipe-review rollout
-scripts/                  stage_hf_space.py (lays out the Hugging Face Space folder)
+docs/                     DEPLOY.md (running it), notes on the swipe-review rollout
 Dockerfile, nginx.conf    Flutter web build -> Nginx image
 docker-compose.yml        frontend + backend
-.github/workflows/       ci.yml (backend lint + tests), deploy-hf-space.yml, deploy-pages.yml
+.github/workflows/ci.yml  backend lint + tests
 ```
 
 ## Testing
