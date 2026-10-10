@@ -10,7 +10,7 @@ This repository is my fork (`Alishnis/urban-syrix`) of a teammate's repository, 
 
 <!-- TODO(owner): add your teammates' roles and how they want to be credited; only your own role is documented here. -->
 
-**Live demo:** offline for now (the Azure student credit that hosted it ran out). Demo video: https://youtu.be/bxcA9Sg-ogw
+**Live demo (frontend only):** TODO(owner) — the detection/routing backend is not hosted; see the demo video: https://youtu.be/bxcA9Sg-ogw
 
 **Demo video:** [youtu.be/bxcA9Sg-ogw](https://youtu.be/bxcA9Sg-ogw)
 
@@ -128,7 +128,7 @@ SQL scripts for the tables `profiles`, `urban_places`, `urban_place_reviews`, `r
 | Computer vision | Ultralytics YOLOv8, OpenCV |
 | AI scoring | OpenRouter (`deepseek/deepseek-v4-flash`) |
 | Routing | OpenRouteService (driving-car, `avoid_polygons`) |
-| Packaging and hosting | Docker, Docker Compose, Nginx (Azure Container Apps was the former host) |
+| Packaging and hosting | Docker, Docker Compose, Nginx, GitHub Pages (frontend only) |
 | Backend tests and CI | pytest, FastAPI TestClient, ruff, GitHub Actions |
 
 ## Quick start
@@ -187,7 +187,7 @@ Frontend at http://localhost:8080 (Nginx), backend at http://localhost:8002/api/
 
 ## Deployment
 
-The live demo is offline (see the top of this README). Run it locally with Docker Compose or the manual setup above; see [docs/DEPLOY.md](docs/DEPLOY.md). `Dockerfile`, `backend/Dockerfile` and `nginx.conf` are kept as reference for the former Azure deployment.
+Only the Flutter web frontend is deployed (GitHub Pages, free); the detection/routing backend is not hosted, so those features show a "not hosted in this demo" message there. Run the full stack locally with Docker Compose or the manual setup above; see [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Configuration
 
