@@ -1,0 +1,102 @@
+name: Deploy frontend to GitHub Pages
+
+# Frontend-only demo of the Flutter web build at
+# https://<owner>.github.io/urban-syrix/. The FastAPI/YOLO backend is
+# intentionally NOT hosted: DETECTION_API_BASE_URL is left unset and
+# DETECTION_API_DISABLED=true makes detection, safe routing and AI scoring show
+# a "not hosted in this demo" message instead of calling a missing server.
+# Skips cleanly (no red CI) until SUPABASE_URL and SUPABASE_ANON_KEY exist as
+# repository secrets; see docs/DEPLOY.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "web/**"
+      - "assets/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Flutter web
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.cfg.outputs.ready }}
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+    steps:
+      - name: Check required configuration
+        id: cfg
+        run: |
+          missing=""
+          [ -n "$SUPABASE_URL" ] || missing="$missing SUPABASE_URL"
+          [ -n "$SUPABASE_ANON_KEY" ] || missing="$missing SUPABASE_ANON_KEY"
+          if [ -n "$missing" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping Pages deploy; missing repository secrets:$missing. See docs/DEPLOY.md."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ready == 'true'
+
+      - uses: subosito/flutter-action@v2
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build web
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          flutter pub get
+          # OPENAI_API_KEY is only a non-secret "AI scoring is available" flag
+          # (same marker docker-compose.yml uses); no real key is ever
+          # dart-defined. DETECTION_API_BASE_URL is deliberately not set.
+          defines=(
+            "--dart-define=SUPABASE_URL=$SUPABASE_URL"
+            "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
+            "--dart-define=OPENAI_API_KEY=backend-proxied"
+            "--dart-define=DETECTION_API_DISABLED=true"
+          )
+          # Optional: when unset, the app keeps its built-in Maps key fallback.
+          if [ -n "$GOOGLE_MAPS_API_KEY" ]; then
+            defines+=("--dart-define=GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY")
+          fi
+          flutter build web --release --base-href /urban-syrix/ "${defines[@]}"
+          # Deep-link safety net; the app uses hash URLs, so this is a fallback.
+          cp build/web/index.html build/web/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          path: build/web
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    if: needs.build.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
