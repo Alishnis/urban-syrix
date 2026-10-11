@@ -10,7 +10,7 @@ This repository is my fork (`Alishnis/urban-syrix`) of a teammate's repository, 
 
 <!-- TODO(owner): add your teammates' roles and how they want to be credited; only your own role is documented here. -->
 
-**Live demo (frontend only):** TODO(owner) — the detection/routing backend is not hosted; see the demo video: https://youtu.be/bxcA9Sg-ogw
+**Live demo (frontend only):** https://alishnis.github.io/urban-syrix/ — places, reviews, swipe and the map run on Supabase; the detection, safe-routing and AI-scoring backend is not hosted in this demo, so those features show a notice. **Demo video:** https://youtu.be/bxcA9Sg-ogw
 
 **Demo video:** [youtu.be/bxcA9Sg-ogw](https://youtu.be/bxcA9Sg-ogw)
 
